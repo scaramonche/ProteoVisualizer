@@ -2,6 +2,7 @@ package dk.ku.cpr.proteinGroupsApp.internal.model;
 
 import java.util.Properties;
 
+import org.cytoscape.model.CyTable;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.work.SynchronousTaskManager;
@@ -114,4 +115,20 @@ public class AppManager {
 		this.executeTask(ti, null);
 	}
 
+	public void createBooleanColumnIfNeeded(CyTable table, Class<?> clazz, String columnName, Boolean defaultValue) {
+		if (table.getColumn(columnName) != null)
+			return;
+
+		table.createColumn(columnName, clazz, false, defaultValue);
+	}
+
+	public void createListColumnIfNeeded(CyTable table, Class<?> clazz, String columnName) {
+		if (table.getColumn(columnName) != null)
+			return;
+
+		table.createListColumn(columnName, clazz, false);
+	}
+
+
+	
 }

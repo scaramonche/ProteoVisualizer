@@ -86,7 +86,6 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 	public void setNetType(String netType) {
 		this.protected_netType.setSelectedValue(netType);
-		;
 	}
 
 	public void setIsGUI(boolean isGUI) {
@@ -165,24 +164,51 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 	@Override
 	public void taskFinished(ObservableTask task) {
 		if (task.getClass().getSimpleName().equals("ProteinQueryTask")) {
-			this.retrievedNetwork = task.getResults(CyNetwork.class);
+			retrievedNetwork = task.getResults(CyNetwork.class);
 
-			// find all the PGs, for which we need to create group nodes
+			// create a map of query term to node
 			HashMap<String, CyNode> queryTerm2node = new HashMap<String, CyNode>();
-			for (CyNode node : this.retrievedNetwork.getNodeList()) {
-				String queryTerm = this.retrievedNetwork.getRow(node).get("query term", String.class);
+			for (CyNode node : retrievedNetwork.getNodeList()) {
+				String queryTerm = retrievedNetwork.getRow(node).get("query term", String.class);
 				if (queryTerm != null) {
 					queryTerm2node.put(queryTerm, node);
 				}
 			}
 
-			// create the group nodes
+			// add needed columns
+			manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
+					SharedProperties.USE_ENRICHMENT, false);
+
+			// duplicate nodes belonging to more than one protein group before creating the
+			// groups?!?
+			for (String protein : protected_protein2pgsMap.keySet()) {
+				Set<String> proteinGroups = protected_protein2pgsMap.get(protein);
+				if (proteinGroups.size() == 1) // ignore if there is a 1-to-1 mapping between protein and protein group
+					continue;
+				if (!queryTerm2node.containsKey(protein)) // ignore if we did not get a node from STRING for this ID
+					continue;
+				CyNode proteinNode = queryTerm2node.get(protein);
+				for (int i = 0; i < proteinGroups.size(); i++) {
+					// TODO: duplicate nodes belonging to different groups before creating the
+					// groups?!?
+					// TODO: we need some way to keep track of that... hmmm
+				}
+			}
+
+			// find all PGs with more than one node and create group nodes for them
 			CyGroupFactory groupFactory = manager.getService(CyGroupFactory.class);
+			// TODO: fix some group setting here before creating the nodes?
 			List<CyGroup> groups = new ArrayList<CyGroup>();
 			for (String pg : protected_pg2proteinsMap.keySet()) {
 				List<String> proteins = protected_pg2proteinsMap.get(pg);
-				if (proteins.size() == 1)
+				if (proteins.size() == 1) {
+					// set the use for enrichment flag and continue with the others
+					if (queryTerm2node.containsKey(proteins.get(0))) {
+						retrievedNetwork.getRow(queryTerm2node.get(proteins.get(0)))
+								.set(SharedProperties.USE_ENRICHMENT, true);
+					}
 					continue;
+				}
 				List<CyNode> nodes = new ArrayList<>();
 				CyNode reprNode = null;
 				for (String protein : proteins) {
@@ -198,20 +224,53 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				groups.add(pgGroup);
 				CyNode groupNode = pgGroup.getGroupNode();
 				// TODO: set whatever attributes we need to set here...
-				// set display name and query term to be the name of the pg
-				retrievedNetwork.getRow(groupNode).set("display name", pg);
-				retrievedNetwork.getRow(groupNode).set("query term", pg);
-				
+
+				// set display name and query term to be the name as the pg
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.DISPLAY, pg); // for now, but probably better to
+																						// concatenate this one
+
+				// set group node to be used for enrichment with the string ID of the repr node
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
+
 				// set some attributes to be the name of the representative node
+				// name, database identifier (string id), @id, namespace, node type, species,
+				// imageurl, style, enhanced label
 				retrievedNetwork.getRow(groupNode).set(CyNetwork.NAME,
 						retrievedNetwork.getRow(reprNode).get(CyNetwork.NAME, String.class));
-				// TODO: add new attribute "use for enrichment"
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.STRINGID,
+						retrievedNetwork.getRow(reprNode).get(SharedProperties.STRINGID, String.class));
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.ID,
+						retrievedNetwork.getRow(reprNode).get(SharedProperties.ID, String.class));
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.NAMESPACE,
+						retrievedNetwork.getRow(reprNode).get(SharedProperties.NAMESPACE, String.class));
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE,
+						retrievedNetwork.getRow(reprNode).get(SharedProperties.TYPE, String.class));
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.SPECIES,
+						retrievedNetwork.getRow(reprNode).get(SharedProperties.SPECIES, String.class));
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.IMAGE,
+						retrievedNetwork.getRow(reprNode).get(SharedProperties.IMAGE, String.class));
+				//retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE,
+				//		retrievedNetwork.getRow(reprNode).get(SharedProperties.STYLE, String.class));
+				// retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.ELABEL_STYLE,
+						retrievedNetwork.getRow(reprNode).get(SharedProperties.ELABEL_STYLE, String.class));
+
+				// TODO: concatenate these:
+				// canonical name, description, display, structures, dev. level, family,
+
+				// TODO: average those
+				// all compartment cols, all tissue cols, interactor score?
+
+				// TODO: what to do with edge attributes?
+
 			}
 			// collapse groups...
+			// TODO: turn off aggregation!
 			// TODO: figure out in which order to do that since it changes the results
-			//for (CyGroup group : groups) {
-			//	group.collapse(retrievedNetwork);
-			//}
+			// for (CyGroup group : groups) {
+			// group.collapse(retrievedNetwork);
+			// }
 		}
 	}
 

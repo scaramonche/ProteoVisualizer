@@ -75,6 +75,8 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 	private boolean ignore = false;
 	NumberFormat formatter;
 
+	// TODO: add option for the user to choose if they want the collapsed or non-collapsed group
+	
 	private JButton closeButton;
 	private JButton retrieveButton;
 
