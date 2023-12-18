@@ -3,17 +3,22 @@ package dk.ku.cpr.proteinGroupsApp.internal.tasks;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.swing.JOptionPane;
 
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.group.CyGroup;
 import org.cytoscape.group.CyGroupFactory;
+import org.cytoscape.model.CyColumn;
+import org.cytoscape.model.CyEdge;
+import org.cytoscape.model.CyEdge.Type;
+import org.cytoscape.model.CyIdentifiable;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
+import org.cytoscape.model.CyTable;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.FinishStatus;
 import org.cytoscape.work.ObservableTask;
@@ -26,6 +31,7 @@ import org.cytoscape.work.json.JSONResult;
 import org.cytoscape.work.util.ListSingleSelection;
 
 import dk.ku.cpr.proteinGroupsApp.internal.model.AppManager;
+import dk.ku.cpr.proteinGroupsApp.internal.model.NetworkType;
 import dk.ku.cpr.proteinGroupsApp.internal.model.SharedProperties;
 import dk.ku.cpr.proteinGroupsApp.internal.utils.SwingUtil;
 
@@ -39,7 +45,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 	protected double protected_cutoff;
 	protected ListSingleSelection<String> protected_netType;
 	protected HashMap<String, List<String>> protected_pg2proteinsMap;
-	protected HashMap<String, Set<String>> protected_protein2pgsMap;
+	protected HashMap<String, List<String>> protected_protein2pgsMap;
 
 	protected CyNetwork retrievedNetwork;
 
@@ -54,10 +60,9 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		this.protected_taxonID = null;
 		this.protected_species = null;
 		this.protected_cutoff = 0.4;
-		// TODO: move names to sharedproperties
 		this.protected_netType = new ListSingleSelection<String>(
-				Arrays.asList("full STRING network", "physical subnetwork"));
-		this.protected_netType.setSelectedValue("full STRING network");
+				Arrays.asList(NetworkType.FUNCTIONAL.toString(), NetworkType.PHYSICAL.toString()));
+		this.protected_netType.setSelectedValue(NetworkType.FUNCTIONAL.toString());
 		this.protected_pg2proteinsMap = null;
 		this.protected_protein2pgsMap = null;
 
@@ -96,7 +101,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		this.protected_pg2proteinsMap = pg2proteinsMap;
 	}
 
-	public void setProteinMapping(HashMap<String, Set<String>> protein2pgsMap) {
+	public void setProteinMapping(HashMap<String, List<String>> protein2pgsMap) {
 		this.protected_protein2pgsMap = protein2pgsMap;
 	}
 
@@ -161,6 +166,17 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		}
 	}
 
+	public void copyRow(CyTable fromTable, CyTable toTable, CyIdentifiable from, CyIdentifiable to) {
+		for (CyColumn col : fromTable.getColumns()) {
+			if (col.getName().equals(CyNetwork.SUID))
+				continue;
+			if (col.getName().equals(CyNetwork.SELECTED))
+				continue;
+			Object v = fromTable.getRow(from.getSUID()).getRaw(col.getName());
+			toTable.getRow(to.getSUID()).set(col.getName(), v);
+		}
+	}
+
 	@Override
 	public void taskFinished(ObservableTask task) {
 		if (task.getClass().getSimpleName().equals("ProteinQueryTask")) {
@@ -179,20 +195,49 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 					SharedProperties.USE_ENRICHMENT, false);
 
-			// duplicate nodes belonging to more than one protein group before creating the
-			// groups?!?
+			// duplicate nodes (and their adjacent edges) if they belong to more than one
+			// protein group
+			HashMap<CyNode, LinkedHashSet<CyNode>> protein2dupProteinsMap = new HashMap<CyNode, LinkedHashSet<CyNode>>();
 			for (String protein : protected_protein2pgsMap.keySet()) {
-				Set<String> proteinGroups = protected_protein2pgsMap.get(protein);
+				List<String> proteinGroups = protected_protein2pgsMap.get(protein);
 				if (proteinGroups.size() == 1) // ignore if there is a 1-to-1 mapping between protein and protein group
 					continue;
 				if (!queryTerm2node.containsKey(protein)) // ignore if we did not get a node from STRING for this ID
 					continue;
 				CyNode proteinNode = queryTerm2node.get(protein);
-				for (int i = 0; i < proteinGroups.size(); i++) {
-					// TODO: duplicate nodes belonging to different groups before creating the
-					// groups?!?
-					// TODO: we need some way to keep track of that... hmmm
+				LinkedHashSet<CyNode> duplicatedNodes = new LinkedHashSet<CyNode>();
+				duplicatedNodes.add(proteinNode);
+				for (int i = 1; i < proteinGroups.size(); i++) {
+					CyNode newDuplNode = retrievedNetwork.addNode();
+					duplicatedNodes.add(newDuplNode);
+					// copy node attributes
+					copyRow(retrievedNetwork.getDefaultNodeTable(), retrievedNetwork.getDefaultNodeTable(), proteinNode,
+							newDuplNode);
+					// create edges and copy edge attributes
+					List<CyEdge> proteinNodeEdges = retrievedNetwork.getAdjacentEdgeList(proteinNode, Type.ANY);
+					for (CyEdge edge : proteinNodeEdges) {
+						// TODO: check if we can assume that the original protein node is the source in
+						// all edges? probably not..
+						CyNode sourceNode = edge.getSource();
+						CyNode targetNode = edge.getTarget();
+						boolean isDirected = edge.isDirected();
+
+						CyEdge newEdge = null;
+						if (sourceNode.equals(proteinNode)) {
+							newEdge = retrievedNetwork.addEdge(newDuplNode, targetNode, isDirected);
+						} else if (targetNode.equals(proteinNode)) {
+							newEdge = retrievedNetwork.addEdge(sourceNode, newDuplNode, isDirected);
+						} else {
+							System.out.println("something goes wrong with the edge copying");
+							continue;
+						}
+						copyRow(retrievedNetwork.getDefaultEdgeTable(), retrievedNetwork.getDefaultEdgeTable(), edge,
+								newEdge);
+					}
+					CyEdge newIdentityEdge = retrievedNetwork.addEdge(proteinNode, newDuplNode, false);
+					retrievedNetwork.getRow(newIdentityEdge).set(CyEdge.INTERACTION, "identity");
 				}
+				protein2dupProteinsMap.put(proteinNode, duplicatedNodes);
 			}
 
 			// find all PGs with more than one node and create group nodes for them
@@ -201,34 +246,41 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			List<CyGroup> groups = new ArrayList<CyGroup>();
 			for (String pg : protected_pg2proteinsMap.keySet()) {
 				List<String> proteins = protected_pg2proteinsMap.get(pg);
-				if (proteins.size() == 1) {
-					// set the use for enrichment flag and continue with the others
-					if (queryTerm2node.containsKey(proteins.get(0))) {
-						retrievedNetwork.getRow(queryTerm2node.get(proteins.get(0)))
-								.set(SharedProperties.USE_ENRICHMENT, true);
-					}
-					continue;
-				}
-				List<CyNode> nodes = new ArrayList<>();
+				List<CyNode> nodesForGroup = new ArrayList<>();
 				CyNode reprNode = null;
+				int proteinCount = 0;
 				for (String protein : proteins) {
 					if (queryTerm2node.containsKey(protein)) {
-						nodes.add(queryTerm2node.get(protein));
-						// TODO: decide how to choose the repr node
-						if (reprNode == null)
-							reprNode = queryTerm2node.get(protein);
+						CyNode proteinNode = queryTerm2node.get(protein);
+						// check if we need to use one of the duplicates
+						if (protein2dupProteinsMap.containsKey(proteinNode) && protein2dupProteinsMap.get(proteinNode).size() > 0) {
+							CyNode copyNode = proteinNode;
+							proteinNode = protein2dupProteinsMap.get(copyNode).iterator().next();
+							protein2dupProteinsMap.get(copyNode).remove(proteinNode);
+						}
+						if (proteinCount == 0) {
+							reprNode = proteinNode;
+						} 
+						nodesForGroup.add(proteinNode);							
 					}
+					proteinCount += 1;
 				}
-				// create and save group
-				CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodes, null, true);
+				// if group only had one protein, continue
+				if (nodesForGroup.size() <= 1) {
+					// set the use for enrichment flag and continue with the others
+					retrievedNetwork.getRow(reprNode).set(SharedProperties.USE_ENRICHMENT, true);
+					continue;
+				}
+				// otherwise create and save group
+				CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodesForGroup, null, true);
 				groups.add(pgGroup);
 				CyNode groupNode = pgGroup.getGroupNode();
 				// TODO: set whatever attributes we need to set here...
 
-				// set display name and query term to be the name as the pg
+				// TODO: what to do with query term?
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.DISPLAY, pg); // for now, but probably better to
-																						// concatenate this one
+				// set display name to be the name as the pg
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.DISPLAY, pg);
 
 				// set group node to be used for enrichment with the string ID of the repr node
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
@@ -250,8 +302,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 						retrievedNetwork.getRow(reprNode).get(SharedProperties.SPECIES, String.class));
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.IMAGE,
 						retrievedNetwork.getRow(reprNode).get(SharedProperties.IMAGE, String.class));
-				//retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE,
-				//		retrievedNetwork.getRow(reprNode).get(SharedProperties.STYLE, String.class));
+				// retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE,
+				// retrievedNetwork.getRow(reprNode).get(SharedProperties.STYLE, String.class));
 				// retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.ELABEL_STYLE,
 						retrievedNetwork.getRow(reprNode).get(SharedProperties.ELABEL_STYLE, String.class));

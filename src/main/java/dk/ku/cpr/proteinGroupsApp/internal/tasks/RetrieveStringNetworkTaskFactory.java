@@ -23,7 +23,7 @@ public class RetrieveStringNetworkTaskFactory extends AbstractTaskFactory {
 	}
 
 	public TaskIterator createTaskIterator(String query, Integer taxonID, String species, double cutoff, String netType,
-			String netName, HashMap<String, List<String>> pg2proteins, HashMap<String, Set<String>> protein2pgs,
+			String netName, HashMap<String, List<String>> pg2proteins, HashMap<String, List<String>> protein2pgs,
 			boolean isGUI) {
 		RetrieveStringNetworkTask task = new RetrieveStringNetworkTask(this.manager);
 

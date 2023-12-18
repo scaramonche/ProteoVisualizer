@@ -355,12 +355,13 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 			Set<String> queryIDs = new HashSet<String>(Arrays.asList(query.split("\n")));
 			Set<String> allProteins = new HashSet<String>();
 			HashMap<String, List<String>> pg2proteins = new HashMap<String, List<String>>();
-			HashMap<String, Set<String>> protein2pgs = new HashMap<String, Set<String>>();
+			HashMap<String, List<String>> protein2pgs = new HashMap<String, List<String>>();
  			for (String queryID : queryIDs) {
+ 				// TODO: let the user choose the delimiter of the proteins within a group
  				List<String> proteinIDs = Arrays.asList(queryID.split(";"));
  				pg2proteins.put(queryID, proteinIDs);
  				for (String protein : proteinIDs) {
- 					Set<String> pgs = new HashSet<String>();
+ 					List<String> pgs = new ArrayList<String>();
  					if (protein2pgs.containsKey(protein)) {
  						pgs = protein2pgs.get(protein);
  					} 
@@ -369,14 +370,14 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
  				}
  				allProteins.addAll(proteinIDs);
 			}
-			String queryForNetwork = String.join(",", allProteins);
-			System.out.println(queryForNetwork);
+			String proteinQueryInput = String.join(",", allProteins);
+			System.out.println(proteinQueryInput);
 			//System.out.println(pg2proteins);
 			//System.out.println(protein2pgs);
 			
 			RetrieveStringNetworkTaskFactory factory = new RetrieveStringNetworkTaskFactory(this.manager);
 			try {
-				this.manager.executeTask(factory.createTaskIterator(queryForNetwork, species.getTaxonID(), species.getName(),
+				this.manager.executeTask(factory.createTaskIterator(proteinQueryInput, species.getTaxonID(), species.getName(),
 						formatter.parse(this.confidenceValue.getText()).doubleValue(), this.getNetworkType().toString(),
 						this.netName.getText(), pg2proteins, protein2pgs, true));
 			} catch (ParseException e1) {
