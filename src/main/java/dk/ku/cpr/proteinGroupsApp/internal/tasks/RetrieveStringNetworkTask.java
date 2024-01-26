@@ -2,10 +2,13 @@ package dk.ku.cpr.proteinGroupsApp.internal.tasks;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JOptionPane;
 
@@ -177,6 +180,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void taskFinished(ObservableTask task) {
 		if (task.getClass().getSimpleName().equals("ProteinQueryTask")) {
@@ -216,12 +220,11 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					// create edges and copy edge attributes
 					List<CyEdge> proteinNodeEdges = retrievedNetwork.getAdjacentEdgeList(proteinNode, Type.ANY);
 					for (CyEdge edge : proteinNodeEdges) {
-						// TODO: check if we can assume that the original protein node is the source in
-						// all edges? probably not..
+						// we should not assume that the original protein node is the source in all edges
 						CyNode sourceNode = edge.getSource();
 						CyNode targetNode = edge.getTarget();
 						boolean isDirected = edge.isDirected();
-
+						// create a new edge 
 						CyEdge newEdge = null;
 						if (sourceNode.equals(proteinNode)) {
 							newEdge = retrievedNetwork.addEdge(newDuplNode, targetNode, isDirected);
@@ -231,11 +234,17 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 							System.out.println("something goes wrong with the edge copying");
 							continue;
 						}
+						// copy edge attributes
 						copyRow(retrievedNetwork.getDefaultEdgeTable(), retrievedNetwork.getDefaultEdgeTable(), edge,
 								newEdge);
 					}
+					// add a new identity edge between the duplicated nodes
 					CyEdge newIdentityEdge = retrievedNetwork.addEdge(proteinNode, newDuplNode, false);
 					retrievedNetwork.getRow(newIdentityEdge).set(CyEdge.INTERACTION, "identity");
+					// TODO: why is this needed?
+					retrievedNetwork.getRow(newIdentityEdge).set(CyNetwork.NAME,
+							retrievedNetwork.getRow(proteinNode).get(CyNetwork.NAME, String.class) + " (identity) "
+									+ retrievedNetwork.getRow(newDuplNode).get(CyNetwork.NAME, String.class));
 				}
 				protein2dupProteinsMap.put(proteinNode, duplicatedNodes);
 			}
@@ -265,64 +274,96 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					}
 					proteinCount += 1;
 				}
-				// if group only had one protein, continue
+				// if group only had one protein, set this node to be used for enrichment and go to the next protein group
 				if (nodesForGroup.size() <= 1) {
 					// set the use for enrichment flag and continue with the others
 					retrievedNetwork.getRow(reprNode).set(SharedProperties.USE_ENRICHMENT, true);
 					continue;
 				}
-				// otherwise create and save group
+				// otherwise create and save the new cyGroup
 				CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodesForGroup, null, true);
 				groups.add(pgGroup);
 				CyNode groupNode = pgGroup.getGroupNode();
-				// TODO: set whatever attributes we need to set here...
 
-				// TODO: what to do with query term?
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
-				// set display name to be the name as the pg
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.DISPLAY, pg);
-
+				// Node attributes that are group-specific
+				// set protein group query term to be the PD name such that import of data works properly
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);								
+				
 				// set group node to be used for enrichment with the string ID of the repr node
+				// TODO: this might change eventually but ok like this for now
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
 
-				// set some attributes to be the name of the representative node
-				// name, database identifier (string id), @id, namespace, node type, species,
-				// imageurl, style, enhanced label
-				retrievedNetwork.getRow(groupNode).set(CyNetwork.NAME,
-						retrievedNetwork.getRow(reprNode).get(CyNetwork.NAME, String.class));
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.STRINGID,
-						retrievedNetwork.getRow(reprNode).get(SharedProperties.STRINGID, String.class));
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.ID,
-						retrievedNetwork.getRow(reprNode).get(SharedProperties.ID, String.class));
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.NAMESPACE,
-						retrievedNetwork.getRow(reprNode).get(SharedProperties.NAMESPACE, String.class));
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE,
-						retrievedNetwork.getRow(reprNode).get(SharedProperties.TYPE, String.class));
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.SPECIES,
-						retrievedNetwork.getRow(reprNode).get(SharedProperties.SPECIES, String.class));
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.IMAGE,
-						retrievedNetwork.getRow(reprNode).get(SharedProperties.IMAGE, String.class));
-				// retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE,
-				// retrievedNetwork.getRow(reprNode).get(SharedProperties.STYLE, String.class));
+				// Node attributes that are copied from the representative node
+				// name, canonical name, database identifier (STRINGID), @id, namespace, node type, species, imageurl, enhanced label
+				// TODO: what to do with style?
 				// retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.ELABEL_STYLE,
-						retrievedNetwork.getRow(reprNode).get(SharedProperties.ELABEL_STYLE, String.class));
-
-				// TODO: concatenate these:
-				// canonical name, description, display, structures, dev. level, family,
-
-				// TODO: average those
+				for (String attr : SharedProperties.nodeAttrinbutesToCopyString) {
+					retrievedNetwork.getRow(groupNode).set(attr,
+							retrievedNetwork.getRow(reprNode).get(attr, String.class));					
+				}
+				
+				// Node attributes (string) that are concatenated
+				// display name, full name, description, sequence, dev. level, family
+				// TODO: what to do with canonical? --> fix in stringApp?
+				for (String attr : SharedProperties.nodeAttrinbutesToConcatString) {
+					String concatValue = "";
+					for (CyNode node : nodesForGroup) {
+						String nodeValue = retrievedNetwork.getRow(node).get(attr, String.class);
+						if (nodeValue == null) 
+							continue;
+						concatValue += ";" + nodeValue;
+					}
+					if (concatValue.startsWith(";"))
+						concatValue = concatValue.substring(1);
+					retrievedNetwork.getRow(groupNode).set(attr, concatValue);
+				}
+				// Node attributes (list of strings) that are concatenated
+				// structures
+				Set<String> structures = new HashSet<String>();
+				for (CyNode node : nodesForGroup) {
+					List<String> nodeStructures = (List<String>) retrievedNetwork.getRow(node).get(SharedProperties.STRUCTURES, List.class);
+					if (nodeStructures == null)
+						continue;
+					structures.addAll(nodeStructures);
+				}
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.STRUCTURES, new ArrayList<String>(structures));
+				
+				// Node attributes that are averaged
 				// all compartment cols, all tissue cols, interactor score?
+				Collection<CyColumn> colsToAverage = retrievedNetwork.getDefaultNodeTable().getColumns(SharedProperties.COMPARTMENT_NAMESPACE);
+				colsToAverage.addAll(retrievedNetwork.getDefaultNodeTable().getColumns(SharedProperties.TISSUE_NAMESPACE));
+				colsToAverage.add(retrievedNetwork.getDefaultNodeTable().getColumn(SharedProperties.INTERACTORSCORE));
+				for (CyColumn col : colsToAverage) {
+					double averagedValue = 0.0;
+					int numValues = 0;
+					if (col == null) 
+						continue;
+					for (CyNode node : nodesForGroup) {
+						Double nodeValue = retrievedNetwork.getRow(node).get(col.getName(), Double.class);
+						if (nodeValue == null) 
+							continue;
+						averagedValue += nodeValue.doubleValue();
+						numValues += 1;
+					}
+					// TODO: shorten to 6 digits precision or not?
+					retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/numValues));
+				}
 
 				// TODO: what to do with edge attributes?
-
+				
 			}
-			// collapse groups...
-			// TODO: turn off aggregation!
-			// TODO: figure out in which order to do that since it changes the results
-			// for (CyGroup group : groups) {
-			// group.collapse(retrievedNetwork);
-			// }
+			// collapse groups (aggregation is turned off in the cy activator)
+			// TODO: do we need to check the preferences again?
+			for (CyGroup group : groups) {
+				//System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class));
+				//System.out.println("#external edges before collapse: " + group.getExternalEdgeList().size());
+				//System.out.println(group.getExternalEdgeList());
+				group.collapse(retrievedNetwork);
+				//System.out.println("#external edges after collapse: " + group.getExternalEdgeList().size());
+				//System.out.println(group.getExternalEdgeList());
+				//System.out.println("#meta edges after collapse: " + retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY));
+			}
+			// 
 		}
 	}
 

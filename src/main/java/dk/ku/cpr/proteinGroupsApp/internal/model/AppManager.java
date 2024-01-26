@@ -2,6 +2,8 @@ package dk.ku.cpr.proteinGroupsApp.internal.model;
 
 import java.util.Properties;
 
+import org.cytoscape.group.events.GroupAboutToCollapseEvent;
+import org.cytoscape.group.events.GroupAboutToCollapseListener;
 import org.cytoscape.model.CyTable;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
@@ -10,7 +12,7 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 
-public class AppManager {
+public class AppManager implements GroupAboutToCollapseListener {
 
 	private CyServiceRegistrar serviceRegistrar;
 
@@ -129,6 +131,12 @@ public class AppManager {
 		table.createListColumn(columnName, clazz, false);
 	}
 
+	@Override
+	public void handleEvent(GroupAboutToCollapseEvent e) {
+		// TODO Auto-generated method stub
+		//System.out.println("group about to collapse "
+		//		+ e.getNetwork().getRow(e.getSource().getGroupNode()).get(CyNetwork.NAME, String.class));
+	}
 
 	
 }

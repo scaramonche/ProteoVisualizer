@@ -58,7 +58,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 
 	private static final long serialVersionUID = -6267319220376028418L;
 
-	private static final int defaultConfidence = 40;
+	private static final int defaultConfidence = 70;
 
 	private JTextArea queryInput;
 	private JTextField netName;

@@ -1,5 +1,10 @@
 package dk.ku.cpr.proteinGroupsApp.internal.model;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.cytoscape.model.CyNetwork;
 import org.cytoscape.work.ServiceProperties;
 
 /**
@@ -33,6 +38,7 @@ public class SharedProperties {
 	public static String NAMESPACE_SEPARATOR = "::";
 	public static String TISSUE_NAMESPACE = "tissue";
 	public static String COMPARTMENT_NAMESPACE = "compartment";
+	public static String TARGET_NAMESPACE = "target";
 	
 	// Node information
 	public static String CANONICAL = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "canonical name";
@@ -44,15 +50,25 @@ public class SharedProperties {
 	public static String DESCRIPTION = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "description";
 	public static String USE_ENRICHMENT = "use for enrichment";
 	public static String IMAGE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "imageurl";
+	public static String INTERACTORSCORE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "interactor score";
 	public static String NAMESPACE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "namespace";
 	public static String QUERYTERM = "query term";
 	public static String SEQUENCE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "sequence";
 	public static String SMILES = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "smiles";
 	public static String SPECIES = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "species";
+	public static String STRUCTURES = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "structures";
 	public static String STRINGID = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "database identifier";
 	public static String STYLE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "STRING style";
 	public static String TYPE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "node type";
 
+	public static String DEVLEVEL = TARGET_NAMESPACE + NAMESPACE_SEPARATOR + "development level";
+	public static String FAMILY = TARGET_NAMESPACE + NAMESPACE_SEPARATOR + "family";
+	
+	public static List<String> nodeAttrinbutesToCopyString = new ArrayList<String>(Arrays.asList(CyNetwork.NAME, CANONICAL, STRINGID, ID, NAMESPACE, TYPE, SPECIES, IMAGE, ELABEL_STYLE));
+	
+	public static List<String> nodeAttrinbutesToConcatString = new ArrayList<String>(Arrays.asList(DISPLAY, FULLNAME, DESCRIPTION, SEQUENCE, DEVLEVEL, FAMILY));
+	
+	
 	// We forbid the class to have instances
 	private SharedProperties() {
 	}

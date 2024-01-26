@@ -2,7 +2,6 @@ package dk.ku.cpr.proteinGroupsApp.internal;
 
 import static org.cytoscape.work.ServiceProperties.COMMAND;
 import static org.cytoscape.work.ServiceProperties.COMMAND_DESCRIPTION;
-import static org.cytoscape.work.ServiceProperties.COMMAND_EXAMPLE_JSON;
 import static org.cytoscape.work.ServiceProperties.COMMAND_LONG_DESCRIPTION;
 import static org.cytoscape.work.ServiceProperties.COMMAND_NAMESPACE;
 import static org.cytoscape.work.ServiceProperties.COMMAND_SUPPORTS_JSON;
@@ -15,11 +14,12 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.cytoscape.application.CyUserLog;
-import org.cytoscape.io.util.StreamUtil;
+import org.cytoscape.group.CyGroupSettingsManager;
+import org.cytoscape.group.CyGroupSettingsManager.DoubleClickAction;
+import org.cytoscape.group.CyGroupSettingsManager.GroupViewType;
+import org.cytoscape.group.events.GroupAboutToCollapseListener;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
-import org.cytoscape.task.NetworkTaskFactory;
-import org.cytoscape.task.NetworkViewTaskFactory;
 import org.cytoscape.work.TaskFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Version;
@@ -27,7 +27,6 @@ import org.osgi.framework.Version;
 import dk.ku.cpr.proteinGroupsApp.internal.model.AppManager;
 import dk.ku.cpr.proteinGroupsApp.internal.model.SharedProperties;
 import dk.ku.cpr.proteinGroupsApp.internal.tasks.AboutTaskFactory;
-import dk.ku.cpr.proteinGroupsApp.internal.tasks.ShowRetrieveWindowTask;
 import dk.ku.cpr.proteinGroupsApp.internal.tasks.ShowRetrieveWindowTaskFactory;
 
 public class CyActivator extends AbstractCyActivator {
@@ -51,6 +50,21 @@ public class CyActivator extends AbstractCyActivator {
 		Version v = bc.getBundle().getVersion();
 		String version = v.toString(); // The full version
 
+		{
+			// Register our listeners
+			registerService(bc, manager, GroupAboutToCollapseListener.class, new Properties());
+			// registerService(bc, manager, GroupEdgesAddedListener.class, new Properties());			
+		}
+
+		{
+			// Set some properties to the groups app
+			CyGroupSettingsManager groupSettingsManager = getService(bc, CyGroupSettingsManager.class);
+			groupSettingsManager.setGroupViewType(GroupViewType.COMPOUND);
+			groupSettingsManager.setEnableAttributeAggregation(false);
+			groupSettingsManager.setDoubleClickAction(DoubleClickAction.EXPANDCONTRACT);
+		}
+		
+		
 		{
 			ShowRetrieveWindowTaskFactory retrieveFactory = new ShowRetrieveWindowTaskFactory(manager);
 			Properties retrieveProps = new Properties();
