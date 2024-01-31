@@ -67,7 +67,11 @@ public class SharedProperties {
 	public static List<String> nodeAttrinbutesToCopyString = new ArrayList<String>(Arrays.asList(CyNetwork.NAME, CANONICAL, STRINGID, ID, NAMESPACE, TYPE, SPECIES, IMAGE, ELABEL_STYLE));
 	
 	public static List<String> nodeAttrinbutesToConcatString = new ArrayList<String>(Arrays.asList(DISPLAY, FULLNAME, DESCRIPTION, SEQUENCE, DEVLEVEL, FAMILY));
-	
+
+
+	// Edge information
+	public static String EDGEPROB = "edge prob";
+
 	
 	// We forbid the class to have instances
 	private SharedProperties() {

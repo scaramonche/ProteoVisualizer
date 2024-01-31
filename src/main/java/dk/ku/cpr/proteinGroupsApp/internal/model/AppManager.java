@@ -4,6 +4,10 @@ import java.util.Properties;
 
 import org.cytoscape.group.events.GroupAboutToCollapseEvent;
 import org.cytoscape.group.events.GroupAboutToCollapseListener;
+import org.cytoscape.group.events.GroupCollapsedEvent;
+import org.cytoscape.group.events.GroupCollapsedListener;
+import org.cytoscape.group.events.GroupEdgesAddedEvent;
+import org.cytoscape.group.events.GroupEdgesAddedListener;
 import org.cytoscape.model.CyTable;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
@@ -12,7 +16,7 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 
-public class AppManager implements GroupAboutToCollapseListener {
+public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedListener, GroupEdgesAddedListener {
 
 	private CyServiceRegistrar serviceRegistrar;
 
@@ -124,6 +128,13 @@ public class AppManager implements GroupAboutToCollapseListener {
 		table.createColumn(columnName, clazz, false, defaultValue);
 	}
 
+	public void createDoubleColumnIfNeeded(CyTable table, Class<?> clazz, String columnName, Double defaultValue) {
+		if (table.getColumn(columnName) != null)
+			return;
+
+		table.createColumn(columnName, clazz, false, defaultValue);
+	}
+
 	public void createListColumnIfNeeded(CyTable table, Class<?> clazz, String columnName) {
 		if (table.getColumn(columnName) != null)
 			return;
@@ -136,6 +147,17 @@ public class AppManager implements GroupAboutToCollapseListener {
 		// TODO Auto-generated method stub
 		//System.out.println("group about to collapse "
 		//		+ e.getNetwork().getRow(e.getSource().getGroupNode()).get(CyNetwork.NAME, String.class));
+	}
+
+	@Override
+	public void handleEvent(GroupCollapsedEvent e) {
+		// TODO Auto-generated method stub
+		// e.getSource().getGroupNode();
+	}
+
+	@Override
+	public void handleEvent(GroupEdgesAddedEvent e) {
+		// TODO Auto-generated method stub
 	}
 
 	

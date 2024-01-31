@@ -198,6 +198,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			// add needed columns
 			manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 					SharedProperties.USE_ENRICHMENT, false);
+			manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
+					SharedProperties.EDGEPROB, 0.0);
 
 			// duplicate nodes (and their adjacent edges) if they belong to more than one
 			// protein group
@@ -253,6 +255,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			CyGroupFactory groupFactory = manager.getService(CyGroupFactory.class);
 			// TODO: fix some group setting here before creating the nodes?
 			List<CyGroup> groups = new ArrayList<CyGroup>();
+			Set<CyNode> groupsAsNodes = new HashSet<CyNode>();
 			for (String pg : protected_pg2proteinsMap.keySet()) {
 				List<String> proteins = protected_pg2proteinsMap.get(pg);
 				List<CyNode> nodesForGroup = new ArrayList<>();
@@ -284,6 +287,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodesForGroup, null, true);
 				groups.add(pgGroup);
 				CyNode groupNode = pgGroup.getGroupNode();
+				groupsAsNodes.add(groupNode);
 
 				// Node attributes that are group-specific
 				// set protein group query term to be the PD name such that import of data works properly
@@ -349,21 +353,99 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/numValues));
 				}
 
-				// TODO: what to do with edge attributes?
-				
 			}
-			// collapse groups (aggregation is turned off in the cy activator)
-			// TODO: do we need to check the preferences again?
+
+			// collapse all the groups
+			// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
 			for (CyGroup group : groups) {
-				//System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class));
-				//System.out.println("#external edges before collapse: " + group.getExternalEdgeList().size());
-				//System.out.println(group.getExternalEdgeList());
-				group.collapse(retrievedNetwork);
+				System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
+				group.collapse(retrievedNetwork);				
+			}
+						
+			// do edge attribute aggregation for the stringdb namespace columns
+			Collection<CyColumn> stringdbCols = retrievedNetwork.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
+			List<String> edgeColsToAverage = new ArrayList<String>();
+			for (CyColumn col : stringdbCols) {
+				if (col == null || !col.getType().equals(Double.class)) 
+					continue;
+				edgeColsToAverage.add(col.getName());
+			}
+			
+			for (CyGroup group : groups) {
+				System.out.println("aggregating edges for group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
+				// group network is a network representation of the nodes in the group and the edges that connect them
+				// CyNetwork groupNetwork = group.getGroupNetwork(); 				
+				// root network is the network that contains the group and the retrieved network?! NOT the same as the retrieved network above
+				CyNetwork rootNetwork = group.getRootNetwork();				
+				// get all nodes in the group
+				List<CyNode> groupNodes = group.getNodeList();
+				// get all external edges, includes both meta edges and edges from any node in the group to any other node in the network 
+				Set<CyEdge> externalEdges = group.getExternalEdgeList();
+				// construct a map of group neighbors and their edges to any group node
+				Map<CyNode, List<CyEdge>> neighborToEdges = new HashMap<CyNode, List<CyEdge>>();
+				// TODO: what to do if the neighbor is a group itself
+				for (CyEdge extEdge : externalEdges) {
+					// ignore if it is an edge of the whole group
+					if (extEdge.getSource().equals(group.getGroupNode()) || extEdge.getTarget().equals(group.getGroupNode())) {
+						continue;
+					}
+					// find the neighbor
+					CyNode neighborNode = null;
+					if (groupNodes.contains(extEdge.getSource()))
+						neighborNode = extEdge.getTarget();
+					else
+						neighborNode = extEdge.getSource();
+					// keep the edge as one of the neighbors' edges
+					if (neighborToEdges.containsKey(neighborNode)) {
+						neighborToEdges.get(neighborNode).add(extEdge);
+					} else {
+						neighborToEdges.put(neighborNode, new ArrayList<CyEdge>(Arrays.asList(extEdge)));
+					}
+				}
+				// is this the same as the external edges?
+				List<CyEdge> groupNodeEdges = retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
+				for (CyEdge newEdge : groupNodeEdges) {
+					// System.out.println("Group node edge from retrieved: " + newEdge);
+					// CyRow row = retrievedNetwork.getRow(newEdge, CyNetwork.HIDDEN_ATTRS);
+					// if (row != null && row.isSet("__isMetaEdge"))
+					// 	System.out.println("ISMETA =  " + row.get("__isMetaEdge", Boolean.class));
+					// find the neighbor
+					CyNode neighbor = null;
+					if (group.getGroupNode().equals(newEdge.getSource())) 
+						neighbor = newEdge.getTarget();
+					else 
+						neighbor = newEdge.getSource();
+					// System.out.println(retrievedNetwork.getRow(neighbor).get(CyNetwork.NAME, String.class));
+					// find out which edges we need to average
+					List<CyEdge> edgesToAverage = new ArrayList<CyEdge>();
+					if (groupsAsNodes.contains(neighbor)) {
+						// TODO: figure out what to do here, i.e. get the edges between nodes of both groups
+						System.out.println("found a neighbor that is a group as well: " + neighbor);
+						System.out.println("with edges to average: " + edgesToAverage.size());
+					} else {
+						// TODO: can we just get the edges connecting the neighbor to the group from the root network?
+						edgesToAverage = neighborToEdges.get(neighbor);
+					}
+					// System.out.println("edges to average: " + edgesToAverage.size());
+					retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPROB, Double.valueOf((double)edgesToAverage.size()/groupNodes.size()));
+					// now get the average and set it for each column
+					for (String col : edgeColsToAverage) {
+						double averagedValue = 0.0;
+						for (CyEdge edge : edgesToAverage) {
+							Double edgeValue = rootNetwork.getRow(edge).get(col, Double.class);
+							if (edgeValue != null) 
+								averagedValue += edgeValue.doubleValue();
+						}
+						if (averagedValue != 0.0) {
+							// TODO: shorten to 6 digits precision or not?
+							retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/groupNodes.size()));							
+						}
+					}					
+				}
 				//System.out.println("#external edges after collapse: " + group.getExternalEdgeList().size());
 				//System.out.println(group.getExternalEdgeList());
 				//System.out.println("#meta edges after collapse: " + retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY));
 			}
-			// 
 		}
 	}
 
