@@ -22,6 +22,7 @@ import org.cytoscape.model.CyIdentifiable;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyTable;
+import org.cytoscape.model.subnetwork.CySubNetwork;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.FinishStatus;
 import org.cytoscape.work.ObservableTask;
@@ -380,29 +381,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				// get all nodes in the group
 				List<CyNode> groupNodes = group.getNodeList();
 				// get all external edges, includes both meta edges and edges from any node in the group to any other node in the network 
-				Set<CyEdge> externalEdges = group.getExternalEdgeList();
-				// construct a map of group neighbors and their edges to any group node
-				Map<CyNode, List<CyEdge>> neighborToEdges = new HashMap<CyNode, List<CyEdge>>();
-				// TODO: what to do if the neighbor is a group itself
-				for (CyEdge extEdge : externalEdges) {
-					// ignore if it is an edge of the whole group
-					if (extEdge.getSource().equals(group.getGroupNode()) || extEdge.getTarget().equals(group.getGroupNode())) {
-						continue;
-					}
-					// find the neighbor
-					CyNode neighborNode = null;
-					if (groupNodes.contains(extEdge.getSource()))
-						neighborNode = extEdge.getTarget();
-					else
-						neighborNode = extEdge.getSource();
-					// keep the edge as one of the neighbors' edges
-					if (neighborToEdges.containsKey(neighborNode)) {
-						neighborToEdges.get(neighborNode).add(extEdge);
-					} else {
-						neighborToEdges.put(neighborNode, new ArrayList<CyEdge>(Arrays.asList(extEdge)));
-					}
-				}
-				// is this the same as the external edges?
+				// Set<CyEdge> externalEdges = group.getExternalEdgeList();
+				// the adjacent edges to the node representing the group are all meta edges between the group and other nodes, so they are not the same as the external edges
 				List<CyEdge> groupNodeEdges = retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
 				for (CyEdge newEdge : groupNodeEdges) {
 					// System.out.println("Group node edge from retrieved: " + newEdge);
@@ -419,14 +399,22 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					// find out which edges we need to average
 					List<CyEdge> edgesToAverage = new ArrayList<CyEdge>();
 					if (groupsAsNodes.contains(neighbor)) {
-						// TODO: figure out what to do here, i.e. get the edges between nodes of both groups
-						System.out.println("found a neighbor that is a group as well: " + neighbor);
-						System.out.println("with edges to average: " + edgesToAverage.size());
+						// if the neighbor is a group node, get the edges between nodes of both groups
+						//System.out.println("found a neighbor that is a group as well: " + neighbor);
+						CySubNetwork groupSubNet = (CySubNetwork)neighbor.getNetworkPointer();
+						for (CyNode group1Node : groupSubNet.getNodeList()) {
+							for (CyNode group2Node : groupNodes) {
+								edgesToAverage.addAll(rootNetwork.getConnectingEdgeList(group1Node, group2Node, Type.ANY));
+							}
+						}
+						//System.out.println("edges to average: " + edgesToAverage.size());
 					} else {
-						// TODO: can we just get the edges connecting the neighbor to the group from the root network?
-						edgesToAverage = neighborToEdges.get(neighbor);
+						//System.out.println("found a normal neighbor: " + neighbor);
+						for (CyNode groupNode : groupNodes) {
+							edgesToAverage.addAll(rootNetwork.getConnectingEdgeList(groupNode, neighbor, Type.ANY));
+						}
+						//System.out.println("with edges to average: " + edgesToAverage);
 					}
-					// System.out.println("edges to average: " + edgesToAverage.size());
 					retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPROB, Double.valueOf((double)edgesToAverage.size()/groupNodes.size()));
 					// now get the average and set it for each column
 					for (String col : edgeColsToAverage) {
@@ -438,13 +426,11 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 						}
 						if (averagedValue != 0.0) {
 							// TODO: shorten to 6 digits precision or not?
-							retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/groupNodes.size()));							
+							retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/edgesToAverage.size()));							
 						}
-					}					
+					}
+					// TODO: in theory we need to assign scores to the meta edges of the uncollapsed group... how to best do that?
 				}
-				//System.out.println("#external edges after collapse: " + group.getExternalEdgeList().size());
-				//System.out.println(group.getExternalEdgeList());
-				//System.out.println("#meta edges after collapse: " + retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY));
 			}
 		}
 	}

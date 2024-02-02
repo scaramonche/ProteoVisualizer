@@ -16,6 +16,7 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 
+// TODO: is there are a group uncollapse event?
 public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedListener, GroupEdgesAddedListener {
 
 	private CyServiceRegistrar serviceRegistrar;
