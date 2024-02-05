@@ -292,14 +292,15 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 				// Node attributes that are group-specific
 				// set protein group query term to be the PD name such that import of data works properly
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);								
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, "protein group");
 				
 				// set group node to be used for enrichment with the string ID of the repr node
 				// TODO: this might change eventually but ok like this for now
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
 
 				// Node attributes that are copied from the representative node
-				// name, canonical name, database identifier (STRINGID), @id, namespace, node type, species, imageurl, enhanced label
+				// name, canonical name, database identifier (STRINGID), @id, namespace, species, imageurl, enhanced label
 				// TODO: what to do with style?
 				// retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
 				for (String attr : SharedProperties.nodeAttrinbutesToCopyString) {
