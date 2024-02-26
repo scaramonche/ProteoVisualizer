@@ -79,7 +79,7 @@ public class CyActivator extends AbstractCyActivator {
 			retrieveProps.setProperty(MENU_GRAVITY, "1.0");
 			retrieveProps.setProperty(IN_MENU_BAR, "true");
 
-			// TODO: use a different task factory in this case
+			// TODO: use a different task factory for the retrieve string net command
 			// command properties
 			//retrieveProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
 			//retrieveProps.setProperty(COMMAND, "retrieve string");

@@ -31,7 +31,6 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 
-// TODO: is there are a group uncollapse event?
 public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedListener, GroupEdgesAddedListener, SelectedNodesAndEdgesListener {
 
 	private CyServiceRegistrar serviceRegistrar;
@@ -250,6 +249,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 			}
 			if (averagedValue != 0.0) {
 				// TODO: shorten to 6 digits precision or not?
+				// TODO: should we change for edge attributes that we average based on number of edges?
 				retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/edgesToAggregate.size()));							
 			}
 		}

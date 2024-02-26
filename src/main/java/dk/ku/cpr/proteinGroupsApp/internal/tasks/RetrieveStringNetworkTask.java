@@ -301,7 +301,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, "protein group");				
 				// set group node to be used for enrichment with the string ID of the repr node
-				// TODO: this might change eventually but ok like this for now
+				// TODO: USE_ENRICHMENT might change eventually but ok like this for now
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
 				// style is getting fixed when we collapse/uncollapse
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
@@ -317,7 +317,6 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				// Node attributes (string) that are concatenated
 				// canonical, display name, full name, dev. level, family
 				// CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY
-				// TODO: what to do with canonical? --> fix in stringApp?
 				for (String attr : SharedProperties.nodeAttrinbutesToConcatString) {
 					String concatValue = "";
 					for (CyNode node : nodesForGroup) {
@@ -359,6 +358,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 						numValues += 1;
 					}
 					// TODO: shorten to 6 digits precision or not?
+					// TODO: should we change for node attributes that we average based on number of values instead of number of group nodes ? 
 					retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/numValues));
 				}
 
