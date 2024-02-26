@@ -68,8 +68,10 @@ public class SharedProperties {
 	
 	public static List<String> nodeAttrinbutesToConcatString = new ArrayList<String>(Arrays.asList(CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY));
 
+	public static String NODE_TYPE_PG = "protein group";
 
 	// Edge information
+	public static String SCORE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "score";
 	public static String EDGEPROB = "edge prob";
 	public static String EDGEPOSSIBLE = "#possible edges";
 	public static String EDGEEXISTING = "#existing edges";

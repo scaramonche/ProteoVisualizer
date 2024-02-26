@@ -15,7 +15,6 @@ import javax.swing.JOptionPane;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.group.CyGroup;
 import org.cytoscape.group.CyGroupFactory;
-import org.cytoscape.group.CyGroupManager;
 import org.cytoscape.model.CyColumn;
 import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyEdge.Type;
@@ -23,7 +22,19 @@ import org.cytoscape.model.CyIdentifiable;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyTable;
-import org.cytoscape.model.subnetwork.CySubNetwork;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
+import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
+import org.cytoscape.view.presentation.property.BasicVisualLexicon;
+import org.cytoscape.view.presentation.property.LineTypeVisualProperty;
+import org.cytoscape.view.presentation.property.values.LineType;
+import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
+import org.cytoscape.view.vizmap.VisualMappingManager;
+import org.cytoscape.view.vizmap.VisualStyle;
+import org.cytoscape.view.vizmap.mappings.BoundaryRangeValues;
+import org.cytoscape.view.vizmap.mappings.ContinuousMapping;
+import org.cytoscape.view.vizmap.mappings.DiscreteMapping;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.FinishStatus;
 import org.cytoscape.work.ObservableTask;
@@ -32,6 +43,7 @@ import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.TaskMonitor.Level;
 import org.cytoscape.work.TaskObserver;
+import org.cytoscape.work.TunableSetter;
 import org.cytoscape.work.json.JSONResult;
 import org.cytoscape.work.util.ListSingleSelection;
 
@@ -182,227 +194,268 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		}
 	}
 
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public void taskFinished(ObservableTask task) {
-		if (task.getClass().getSimpleName().equals("ProteinQueryTask")) {
-			retrievedNetwork = task.getResults(CyNetwork.class);
+		if (!task.getClass().getSimpleName().equals("ProteinQueryTask")) 
+			return;
+		
+		// get network on which the task was executed
+		retrievedNetwork = task.getResults(CyNetwork.class);
 
-			// create a map of query term to node
-			HashMap<String, CyNode> queryTerm2node = new HashMap<String, CyNode>();
-			for (CyNode node : retrievedNetwork.getNodeList()) {
-				String queryTerm = retrievedNetwork.getRow(node).get("query term", String.class);
-				if (queryTerm != null) {
-					queryTerm2node.put(queryTerm, node);
-				}
+		// create a map of query term to node
+		HashMap<String, CyNode> queryTerm2node = new HashMap<String, CyNode>();
+		for (CyNode node : retrievedNetwork.getNodeList()) {
+			String queryTerm = retrievedNetwork.getRow(node).get("query term", String.class);
+			if (queryTerm != null) {
+				queryTerm2node.put(queryTerm, node);
 			}
+		}
 
-			// add needed columns
-			manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
-					SharedProperties.USE_ENRICHMENT, false);
-			manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
-					SharedProperties.EDGEAGGREGATED, false);
-			manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
-					SharedProperties.EDGEPROB, null);
-			manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
-					SharedProperties.EDGEPOSSIBLE, null);
-			manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
-					SharedProperties.EDGEEXISTING, null);
+		// add needed new columns
+		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
+				SharedProperties.USE_ENRICHMENT, false);
+		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
+				SharedProperties.EDGEAGGREGATED, false);
+		manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
+				SharedProperties.EDGEPROB, null);
+		manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
+				SharedProperties.EDGEPOSSIBLE, null);
+		manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
+				SharedProperties.EDGEEXISTING, null);
+		
+		// duplicate nodes (and their adjacent edges) if they belong to more than one protein group
+		HashMap<CyNode, LinkedHashSet<CyNode>> protein2dupProteinsMap = new HashMap<CyNode, LinkedHashSet<CyNode>>();
+		for (String protein : protected_protein2pgsMap.keySet()) {
+			List<String> proteinGroups = protected_protein2pgsMap.get(protein);
+			if (proteinGroups.size() == 1) // ignore if there is a 1-to-1 mapping between protein and protein group
+				continue;
+			if (!queryTerm2node.containsKey(protein)) // ignore if we did not get a node from STRING for this ID
+				continue;
+			CyNode proteinNode = queryTerm2node.get(protein);
+			LinkedHashSet<CyNode> duplicatedNodes = new LinkedHashSet<CyNode>();
+			duplicatedNodes.add(proteinNode);
+			for (int i = 1; i < proteinGroups.size(); i++) {
+				CyNode newDuplNode = retrievedNetwork.addNode();
+				duplicatedNodes.add(newDuplNode);
+				// copy node attributes
+				copyRow(retrievedNetwork.getDefaultNodeTable(), retrievedNetwork.getDefaultNodeTable(), proteinNode,
+						newDuplNode);
+				// create edges and copy edge attributes
+				List<CyEdge> proteinNodeEdges = retrievedNetwork.getAdjacentEdgeList(proteinNode, Type.ANY);
+				for (CyEdge edge : proteinNodeEdges) {
+					// we should not assume that the original protein node is the source in all edges
+					CyNode sourceNode = edge.getSource();
+					CyNode targetNode = edge.getTarget();
+					boolean isDirected = edge.isDirected();
+					// create a new edge 
+					CyEdge newEdge = null;
+					if (sourceNode.equals(proteinNode)) {
+						newEdge = retrievedNetwork.addEdge(newDuplNode, targetNode, isDirected);
+					} else if (targetNode.equals(proteinNode)) {
+						newEdge = retrievedNetwork.addEdge(sourceNode, newDuplNode, isDirected);
+					} else {
+						System.out.println("something goes wrong with the edge copying");
+						continue;
+					}
+					// copy edge attributes
+					copyRow(retrievedNetwork.getDefaultEdgeTable(), retrievedNetwork.getDefaultEdgeTable(), edge,
+							newEdge);
+				}
+				// add a new identity edge between the duplicated nodes
+				CyEdge newIdentityEdge = retrievedNetwork.addEdge(proteinNode, newDuplNode, false);
+				retrievedNetwork.getRow(newIdentityEdge).set(CyEdge.INTERACTION, "identity");
+				// TODO: why is this needed?
+				retrievedNetwork.getRow(newIdentityEdge).set(CyNetwork.NAME,
+						retrievedNetwork.getRow(proteinNode).get(CyNetwork.NAME, String.class) + " (identity) "
+								+ retrievedNetwork.getRow(newDuplNode).get(CyNetwork.NAME, String.class));
+			}
+			protein2dupProteinsMap.put(proteinNode, duplicatedNodes);
+		}
+
+		// find all PGs with more than one node and create group nodes for them
+		// in addition, handle all node attribtues! 
+		CyGroupFactory groupFactory = manager.getService(CyGroupFactory.class);
+		// TODO: fix some cyGroup setting here before creating the nodes?
+		List<CyGroup> groups = new ArrayList<CyGroup>();
+		for (String pg : protected_pg2proteinsMap.keySet()) {
+			List<String> proteins = protected_pg2proteinsMap.get(pg);
+			List<CyNode> nodesForGroup = new ArrayList<>();
+			CyNode reprNode = null;
+			int proteinCount = 0;
+			for (String protein : proteins) {
+				if (queryTerm2node.containsKey(protein)) {
+					CyNode proteinNode = queryTerm2node.get(protein);
+					// check if we need to use one of the duplicates
+					if (protein2dupProteinsMap.containsKey(proteinNode) && protein2dupProteinsMap.get(proteinNode).size() > 0) {
+						CyNode copyNode = proteinNode;
+						proteinNode = protein2dupProteinsMap.get(copyNode).iterator().next();
+						protein2dupProteinsMap.get(copyNode).remove(proteinNode);
+					}
+					if (proteinCount == 0) {
+						reprNode = proteinNode;
+					} 
+					nodesForGroup.add(proteinNode);							
+				}
+				proteinCount += 1;
+			}
+			// if group only had one protein, set this node to be used for enrichment and go to the next protein group
+			if (nodesForGroup.size() <= 1) {
+				// set the use for enrichment flag and continue with the others
+				retrievedNetwork.getRow(reprNode).set(SharedProperties.USE_ENRICHMENT, true);
+				continue;
+			}
+			// otherwise create and save the new cyGroup
+			CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodesForGroup, null, true);
+			groups.add(pgGroup);
+			CyNode groupNode = pgGroup.getGroupNode();
+
+			// Node attributes that are group-specific
+			// set protein group query term to be the PD name such that import of data works properly
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, SharedProperties.NODE_TYPE_PG);				
+			// set group node to be used for enrichment with the string ID of the repr node
+			// TODO: USE_ENRICHMENT might change eventually but ok like this for now
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
+			// style is getting fixed when we collapse/uncollapse
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
 			
-			// duplicate nodes (and their adjacent edges) if they belong to more than one
-			// protein group
-			HashMap<CyNode, LinkedHashSet<CyNode>> protein2dupProteinsMap = new HashMap<CyNode, LinkedHashSet<CyNode>>();
-			for (String protein : protected_protein2pgsMap.keySet()) {
-				List<String> proteinGroups = protected_protein2pgsMap.get(protein);
-				if (proteinGroups.size() == 1) // ignore if there is a 1-to-1 mapping between protein and protein group
-					continue;
-				if (!queryTerm2node.containsKey(protein)) // ignore if we did not get a node from STRING for this ID
-					continue;
-				CyNode proteinNode = queryTerm2node.get(protein);
-				LinkedHashSet<CyNode> duplicatedNodes = new LinkedHashSet<CyNode>();
-				duplicatedNodes.add(proteinNode);
-				for (int i = 1; i < proteinGroups.size(); i++) {
-					CyNode newDuplNode = retrievedNetwork.addNode();
-					duplicatedNodes.add(newDuplNode);
-					// copy node attributes
-					copyRow(retrievedNetwork.getDefaultNodeTable(), retrievedNetwork.getDefaultNodeTable(), proteinNode,
-							newDuplNode);
-					// create edges and copy edge attributes
-					List<CyEdge> proteinNodeEdges = retrievedNetwork.getAdjacentEdgeList(proteinNode, Type.ANY);
-					for (CyEdge edge : proteinNodeEdges) {
-						// we should not assume that the original protein node is the source in all edges
-						CyNode sourceNode = edge.getSource();
-						CyNode targetNode = edge.getTarget();
-						boolean isDirected = edge.isDirected();
-						// create a new edge 
-						CyEdge newEdge = null;
-						if (sourceNode.equals(proteinNode)) {
-							newEdge = retrievedNetwork.addEdge(newDuplNode, targetNode, isDirected);
-						} else if (targetNode.equals(proteinNode)) {
-							newEdge = retrievedNetwork.addEdge(sourceNode, newDuplNode, isDirected);
-						} else {
-							System.out.println("something goes wrong with the edge copying");
-							continue;
-						}
-						// copy edge attributes
-						copyRow(retrievedNetwork.getDefaultEdgeTable(), retrievedNetwork.getDefaultEdgeTable(), edge,
-								newEdge);
-					}
-					// add a new identity edge between the duplicated nodes
-					CyEdge newIdentityEdge = retrievedNetwork.addEdge(proteinNode, newDuplNode, false);
-					retrievedNetwork.getRow(newIdentityEdge).set(CyEdge.INTERACTION, "identity");
-					// TODO: why is this needed?
-					retrievedNetwork.getRow(newIdentityEdge).set(CyNetwork.NAME,
-							retrievedNetwork.getRow(proteinNode).get(CyNetwork.NAME, String.class) + " (identity) "
-									+ retrievedNetwork.getRow(newDuplNode).get(CyNetwork.NAME, String.class));
-				}
-				protein2dupProteinsMap.put(proteinNode, duplicatedNodes);
+			// Node attributes that are copied from the representative node
+			// name, database identifier (STRINGID), @id, namespace, species, enhanced label
+			// NAME, STRINGID, ID, NAMESPACE, SPECIES, ELABEL_STYLE
+			for (String attr : SharedProperties.nodeAttrinbutesToCopyString) {
+				retrievedNetwork.getRow(groupNode).set(attr,
+						retrievedNetwork.getRow(reprNode).get(attr, String.class));					
 			}
-
-			// find all PGs with more than one node and create group nodes for them
-			CyGroupFactory groupFactory = manager.getService(CyGroupFactory.class);
-			CyGroupManager groupManager = manager.getService(CyGroupManager.class);
-			// TODO: fix some cyGroup setting here before creating the nodes?
-			List<CyGroup> groups = new ArrayList<CyGroup>();
-			for (String pg : protected_pg2proteinsMap.keySet()) {
-				List<String> proteins = protected_pg2proteinsMap.get(pg);
-				List<CyNode> nodesForGroup = new ArrayList<>();
-				CyNode reprNode = null;
-				int proteinCount = 0;
-				for (String protein : proteins) {
-					if (queryTerm2node.containsKey(protein)) {
-						CyNode proteinNode = queryTerm2node.get(protein);
-						// check if we need to use one of the duplicates
-						if (protein2dupProteinsMap.containsKey(proteinNode) && protein2dupProteinsMap.get(proteinNode).size() > 0) {
-							CyNode copyNode = proteinNode;
-							proteinNode = protein2dupProteinsMap.get(copyNode).iterator().next();
-							protein2dupProteinsMap.get(copyNode).remove(proteinNode);
-						}
-						if (proteinCount == 0) {
-							reprNode = proteinNode;
-						} 
-						nodesForGroup.add(proteinNode);							
-					}
-					proteinCount += 1;
-				}
-				// if group only had one protein, set this node to be used for enrichment and go to the next protein group
-				if (nodesForGroup.size() <= 1) {
-					// set the use for enrichment flag and continue with the others
-					retrievedNetwork.getRow(reprNode).set(SharedProperties.USE_ENRICHMENT, true);
-					continue;
-				}
-				// otherwise create and save the new cyGroup
-				CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodesForGroup, null, true);
-				groups.add(pgGroup);
-				CyNode groupNode = pgGroup.getGroupNode();
-
-				// Node attributes that are group-specific
-				// set protein group query term to be the PD name such that import of data works properly
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, "protein group");				
-				// set group node to be used for enrichment with the string ID of the repr node
-				// TODO: USE_ENRICHMENT might change eventually but ok like this for now
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
-				// style is getting fixed when we collapse/uncollapse
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
-				
-				// Node attributes that are copied from the representative node
-				// name, database identifier (STRINGID), @id, namespace, species, enhanced label
-				// NAME, STRINGID, ID, NAMESPACE, SPECIES, ELABEL_STYLE
-				for (String attr : SharedProperties.nodeAttrinbutesToCopyString) {
-					retrievedNetwork.getRow(groupNode).set(attr,
-							retrievedNetwork.getRow(reprNode).get(attr, String.class));					
-				}
-				
-				// Node attributes (string) that are concatenated
-				// canonical, display name, full name, dev. level, family
-				// CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY
-				for (String attr : SharedProperties.nodeAttrinbutesToConcatString) {
-					String concatValue = "";
-					for (CyNode node : nodesForGroup) {
-						String nodeValue = retrievedNetwork.getRow(node).get(attr, String.class);
-						if (nodeValue == null) 
-							continue;
-						concatValue += ";" + nodeValue;
-					}
-					if (concatValue.startsWith(";"))
-						concatValue = concatValue.substring(1);
-					retrievedNetwork.getRow(groupNode).set(attr, concatValue);
-				}
-				// Node attributes (list of strings) that are concatenated
-				// structures
-				Set<String> structures = new HashSet<String>();
+			
+			// Node attributes (string) that are concatenated
+			// canonical, display name, full name, dev. level, family
+			// CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY
+			for (String attr : SharedProperties.nodeAttrinbutesToConcatString) {
+				String concatValue = "";
 				for (CyNode node : nodesForGroup) {
-					List<String> nodeStructures = (List<String>) retrievedNetwork.getRow(node).get(SharedProperties.STRUCTURES, List.class);
-					if (nodeStructures == null)
+					String nodeValue = retrievedNetwork.getRow(node).get(attr, String.class);
+					if (nodeValue == null) 
 						continue;
-					structures.addAll(nodeStructures);
+					concatValue += ";" + nodeValue;
 				}
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.STRUCTURES, new ArrayList<String>(structures));
-				
-				// Node attributes that are averaged
-				// all compartment cols, all tissue cols, interactor score?
-				Collection<CyColumn> colsToAverage = retrievedNetwork.getDefaultNodeTable().getColumns(SharedProperties.COMPARTMENT_NAMESPACE);
-				colsToAverage.addAll(retrievedNetwork.getDefaultNodeTable().getColumns(SharedProperties.TISSUE_NAMESPACE));
-				colsToAverage.add(retrievedNetwork.getDefaultNodeTable().getColumn(SharedProperties.INTERACTORSCORE));
-				for (CyColumn col : colsToAverage) {
-					double averagedValue = 0.0;
-					int numValues = 0;
-					if (col == null) 
-						continue;
-					for (CyNode node : nodesForGroup) {
-						Double nodeValue = retrievedNetwork.getRow(node).get(col.getName(), Double.class);
-						if (nodeValue == null) 
-							continue;
-						averagedValue += nodeValue.doubleValue();
-						numValues += 1;
-					}
-					// TODO: shorten to 6 digits precision or not?
-					// TODO: should we change for node attributes that we average based on number of values instead of number of group nodes ? 
-					retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/numValues));
-				}
-
+				if (concatValue.startsWith(";"))
+					concatValue = concatValue.substring(1);
+				retrievedNetwork.getRow(groupNode).set(attr, concatValue);
 			}
-
-			// collapse all the groups
-			// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
-			for (CyGroup group : groups) {
-				System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
-				group.collapse(retrievedNetwork);				
-			}
-						
-			// do edge attribute aggregation for the stringdb namespace columns
-			Collection<CyColumn> stringdbCols = retrievedNetwork.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
-			List<String> edgeColsToAggregate = new ArrayList<String>();
-			for (CyColumn col : stringdbCols) {
-				if (col == null || !col.getType().equals(Double.class)) 
+			// Node attributes (list of strings) that are concatenated
+			// structures
+			Set<String> structures = new HashSet<String>();
+			for (CyNode node : nodesForGroup) {
+				List<String> nodeStructures = (List<String>) retrievedNetwork.getRow(node).get(SharedProperties.STRUCTURES, List.class);
+				if (nodeStructures == null)
 					continue;
-				edgeColsToAggregate.add(col.getName());
+				structures.addAll(nodeStructures);
 			}
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.STRUCTURES, new ArrayList<String>(structures));
 			
-			for (CyGroup group : groups) {
-				System.out.println("aggregating edge attributes for group "
-						+ retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: "
-						+ group.getGroupNode().getSUID() + ")");
-				// group network is a network representation of the nodes in the group and the edges that connect them
-				// CyNetwork groupNetwork = group.getGroupNetwork();
-				// root network is the network that contains the group and the retrieved network?! NOT the same as the retrieved network above
-				// CyNetwork rootNetwork = group.getRootNetwork();				
-				// get all external edges, includes both meta edges and edges from any node in the group to any other node in the network 
-				// Set<CyEdge> externalEdges = group.getExternalEdgeList();
-				// the adjacent edges to the node representing the group are all meta edges between the group and other nodes, so they are not the same as the external edges
-				List<CyEdge> groupNodeEdges = retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
-				for (CyEdge newEdge : groupNodeEdges) {
-					// find the neighbor
-					CyNode neighbor = null;
-					if (group.getGroupNode().equals(newEdge.getSource())) 
-						neighbor = newEdge.getTarget();
-					else 
-						neighbor = newEdge.getSource();
-					// aggregate edge attributes 
-					manager.aggregateGroupEdgeAttributes(retrievedNetwork, group, newEdge, group.getNodeList(), neighbor, edgeColsToAggregate);
+			// Node attributes that are averaged
+			// all compartment cols, all tissue cols, interactor score?
+			Collection<CyColumn> colsToAverage = retrievedNetwork.getDefaultNodeTable().getColumns(SharedProperties.COMPARTMENT_NAMESPACE);
+			colsToAverage.addAll(retrievedNetwork.getDefaultNodeTable().getColumns(SharedProperties.TISSUE_NAMESPACE));
+			colsToAverage.add(retrievedNetwork.getDefaultNodeTable().getColumn(SharedProperties.INTERACTORSCORE));
+			for (CyColumn col : colsToAverage) {
+				double averagedValue = 0.0;
+				int numValues = 0;
+				if (col == null) 
+					continue;
+				for (CyNode node : nodesForGroup) {
+					Double nodeValue = retrievedNetwork.getRow(node).get(col.getName(), Double.class);
+					if (nodeValue == null) 
+						continue;
+					averagedValue += nodeValue.doubleValue();
+					numValues += 1;
 				}
+				// TODO: shorten to 6 digits precision or not?
+				// TODO: should we change for node attributes that we average based on number of values instead of number of group nodes ? 
+				retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/numValues));
 			}
+		}
+
+		// collapse all the groups
+		// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
+		for (CyGroup group : groups) {
+			System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
+			group.collapse(retrievedNetwork);				
+		}
+					
+		// retrieve the stringdb namespace columns
+		Collection<CyColumn> stringdbCols = retrievedNetwork.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
+		List<String> edgeColsToAggregate = new ArrayList<String>();
+		for (CyColumn col : stringdbCols) {
+			if (col == null || !col.getType().equals(Double.class)) 
+				continue;
+			edgeColsToAggregate.add(col.getName());
+		}
+		
+		// do edge attribute aggregation for the stringdb namespace columns 
+		for (CyGroup group : groups) {
+			System.out.println("aggregating edge attributes for group "
+					+ retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: "
+					+ group.getGroupNode().getSUID() + ")");
+			// group network is a network representation of the nodes in the group and the edges that connect them
+			// CyNetwork groupNetwork = group.getGroupNetwork();
+			// root network is the network that contains the group and the retrieved network?! NOT the same as the retrieved network above
+			// CyNetwork rootNetwork = group.getRootNetwork();				
+			// get all external edges, includes both meta edges and edges from any node in the group to any other node in the network 
+			// Set<CyEdge> externalEdges = group.getExternalEdgeList();
+			// the adjacent edges to the node representing the group are all meta edges between the group and other nodes, so they are not the same as the external edges
+			List<CyEdge> groupNodeEdges = retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
+			for (CyEdge newEdge : groupNodeEdges) {
+				// find the neighbor
+				CyNode neighbor = null;
+				if (group.getGroupNode().equals(newEdge.getSource())) 
+					neighbor = newEdge.getTarget();
+				else 
+					neighbor = newEdge.getSource();
+				// aggregate edge attributes 
+				manager.aggregateGroupEdgeAttributes(retrievedNetwork, group, newEdge, group.getNodeList(), neighbor, edgeColsToAggregate);
+			}
+		}
+		
+		// redo layout and set visual properties!
+		VisualMappingManager vmm = manager.getService(VisualMappingManager.class);
+		VisualStyle currentVS = vmm.getCurrentVisualStyle();
+		
+		// add node transparency for protein group nodes
+		VisualMappingFunctionFactory discreteFactory = 
+                manager.getService(VisualMappingFunctionFactory.class, "(mapping.type=discrete)");
+		DiscreteMapping<String,Integer> dMapping = (DiscreteMapping) currentVS.getVisualMappingFunction(BasicVisualLexicon.NODE_TRANSPARENCY);
+		if (dMapping == null) {
+			dMapping = (DiscreteMapping) discreteFactory.createVisualMappingFunction(SharedProperties.TYPE, String.class, BasicVisualLexicon.NODE_TRANSPARENCY);
+		} 
+		dMapping.putMapValue(SharedProperties.NODE_TYPE_PG, 50);
+		currentVS.addVisualMappingFunction(dMapping);
+		
+		// TODO: add visual mapping for edge lines
+		VisualMappingFunctionFactory continuousFactory = manager.getService(VisualMappingFunctionFactory.class,
+				"(mapping.type=continuous)");
+		ContinuousMapping<Double, LineType> cMapping = (ContinuousMapping) continuousFactory
+				.createVisualMappingFunction(SharedProperties.SCORE, Double.class, BasicVisualLexicon.EDGE_LINE_TYPE);
+		cMapping.addPoint(this.protected_cutoff, new BoundaryRangeValues<LineType>(LineTypeVisualProperty.EQUAL_DASH,
+				LineTypeVisualProperty.SOLID, LineTypeVisualProperty.SOLID));
+		currentVS.addVisualMappingFunction(cMapping);
+
+		
+		// lay out network after collapsing groups 
+		CyNetworkView networkView = manager.getCurrentNetworkView();
+		if (networkView != null && networkView.getModel().equals(retrievedNetwork)) {
+			CyLayoutAlgorithm alg = manager.getService(CyLayoutAlgorithmManager.class)
+					.getLayout("force-directed");
+			Object context = alg.createLayoutContext();
+			TunableSetter setter = manager.getService(TunableSetter.class);
+			Map<String, Object> layoutArgs = new HashMap<>();
+			layoutArgs.put("defaultNodeMass", 10.0);
+			setter.applyTunables(context, layoutArgs);
+			Set<View<CyNode>> nodeViews = new HashSet<>(networkView.getNodeViews());
+			insertTasksAfterCurrentTask(
+					alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
 		}
 	}
 

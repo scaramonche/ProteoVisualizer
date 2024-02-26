@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.group.CyGroup;
 import org.cytoscape.group.CyGroupManager;
 import org.cytoscape.group.events.GroupAboutToCollapseEvent;
@@ -26,6 +27,9 @@ import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
 import org.cytoscape.model.subnetwork.CySubNetwork;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
+import org.cytoscape.view.presentation.property.BasicVisualLexicon;
 import org.cytoscape.work.SynchronousTaskManager;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
@@ -164,20 +168,28 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		table.createListColumn(columnName, clazz, false);
 	}
 
+	public CyNetworkView getCurrentNetworkView() {
+		return getService(CyApplicationManager.class).getCurrentNetworkView();
+	}
 
 	@Override
 	public void handleEvent(GroupCollapsedEvent e) {
 		CyGroup group = e.getSource();
 		CyNode groupNode = group.getGroupNode();
 		CyNetwork network = e.getNetwork();
+		// CyNetworkView view = getCurrentNetworkView();
+		// View<CyNode> nodeView = view.getNodeView(groupNode);
 		if (e.collapsed()) {
 			// System.out.println("group collapsed");
 			// change style of string node
 			network.getRow(groupNode).set(SharedProperties.STYLE, "string:");
+			//nodeView.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 255);
 		} else {
 			// System.out.println("group expanded");
 			// change style of string node
 			network.getRow(groupNode).set(SharedProperties.STYLE, "");
+			//nodeView.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 50);
+			
 			// aggregate edge attributes if not already done 
 			// do edge attribute aggregation for the stringdb namespace columns
 			Collection<CyColumn> stringdbCols = network.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
@@ -258,8 +270,20 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 
 	@Override
 	public void handleEvent(SelectedNodesAndEdgesEvent event) {
-		// TODO Auto-generated method stub
-		
+		// TODO: figure out what to do when group nodes are selected
+		// needs to add the listener to app manager in CyActivator
+		Collection<CyNode> nodes = event.getSelectedNodes();
+		CyNetwork network = event.getNetwork();
+		CyGroupManager groupManager = getService(CyGroupManager.class);
+		for (CyNode node : nodes) {
+			if (groupManager.isGroup(node, network)) {
+				CyGroup group = groupManager.getGroup(node, network);
+				for (CyNode groupNode : group.getNodeList()) {
+					if (network.getRow(groupNode) != null)
+						network.getRow(groupNode).set(CyNetwork.SELECTED, true);
+				}
+			}
+		}
 	}
 	
 

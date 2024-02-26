@@ -58,7 +58,7 @@ public class CyActivator extends AbstractCyActivator {
 			registerService(bc, manager, GroupAboutToCollapseListener.class, new Properties());
 			registerService(bc, manager, GroupCollapsedListener.class, new Properties());			
 			registerService(bc, manager, GroupEdgesAddedListener.class, new Properties());
-			registerService(bc, manager, SelectedNodesAndEdgesListener.class, new Properties());
+			// registerService(bc, manager, SelectedNodesAndEdgesListener.class, new Properties());
 		}
 
 		{
