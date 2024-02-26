@@ -18,6 +18,9 @@ import org.cytoscape.group.CyGroupSettingsManager;
 import org.cytoscape.group.CyGroupSettingsManager.DoubleClickAction;
 import org.cytoscape.group.CyGroupSettingsManager.GroupViewType;
 import org.cytoscape.group.events.GroupAboutToCollapseListener;
+import org.cytoscape.group.events.GroupCollapsedListener;
+import org.cytoscape.group.events.GroupEdgesAddedListener;
+import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.work.TaskFactory;
@@ -53,7 +56,9 @@ public class CyActivator extends AbstractCyActivator {
 		{
 			// Register our listeners
 			registerService(bc, manager, GroupAboutToCollapseListener.class, new Properties());
-			// registerService(bc, manager, GroupEdgesAddedListener.class, new Properties());			
+			registerService(bc, manager, GroupCollapsedListener.class, new Properties());			
+			registerService(bc, manager, GroupEdgesAddedListener.class, new Properties());
+			registerService(bc, manager, SelectedNodesAndEdgesListener.class, new Properties());
 		}
 
 		{

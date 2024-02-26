@@ -1,14 +1,29 @@
 package dk.ku.cpr.proteinGroupsApp.internal.model;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
+import org.cytoscape.group.CyGroup;
+import org.cytoscape.group.CyGroupManager;
 import org.cytoscape.group.events.GroupAboutToCollapseEvent;
 import org.cytoscape.group.events.GroupAboutToCollapseListener;
 import org.cytoscape.group.events.GroupCollapsedEvent;
 import org.cytoscape.group.events.GroupCollapsedListener;
 import org.cytoscape.group.events.GroupEdgesAddedEvent;
 import org.cytoscape.group.events.GroupEdgesAddedListener;
+import org.cytoscape.model.CyColumn;
+import org.cytoscape.model.CyEdge;
+import org.cytoscape.model.CyEdge.Type;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNode;
 import org.cytoscape.model.CyTable;
+import org.cytoscape.model.events.SelectedNodesAndEdgesEvent;
+import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
+import org.cytoscape.model.subnetwork.CySubNetwork;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.work.SynchronousTaskManager;
@@ -17,7 +32,7 @@ import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 
 // TODO: is there are a group uncollapse event?
-public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedListener, GroupEdgesAddedListener {
+public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedListener, GroupEdgesAddedListener, SelectedNodesAndEdgesListener {
 
 	private CyServiceRegistrar serviceRegistrar;
 
@@ -136,12 +151,117 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		table.createColumn(columnName, clazz, false, defaultValue);
 	}
 
+	public void createIntegerColumnIfNeeded(CyTable table, Class<?> clazz, String columnName, Integer defaultValue) {
+		if (table.getColumn(columnName) != null)
+			return;
+
+		table.createColumn(columnName, clazz, false, defaultValue);
+	}
+
 	public void createListColumnIfNeeded(CyTable table, Class<?> clazz, String columnName) {
 		if (table.getColumn(columnName) != null)
 			return;
 
 		table.createListColumn(columnName, clazz, false);
 	}
+
+
+	@Override
+	public void handleEvent(GroupCollapsedEvent e) {
+		CyGroup group = e.getSource();
+		CyNode groupNode = group.getGroupNode();
+		CyNetwork network = e.getNetwork();
+		if (e.collapsed()) {
+			// System.out.println("group collapsed");
+			// change style of string node
+			network.getRow(groupNode).set(SharedProperties.STYLE, "string:");
+		} else {
+			// System.out.println("group expanded");
+			// change style of string node
+			network.getRow(groupNode).set(SharedProperties.STYLE, "");
+			// aggregate edge attributes if not already done 
+			// do edge attribute aggregation for the stringdb namespace columns
+			Collection<CyColumn> stringdbCols = network.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
+			List<String> edgeColsToAverage = new ArrayList<String>();
+			for (CyColumn col : stringdbCols) {
+				if (col == null || !col.getType().equals(Double.class)) 
+					continue;
+				edgeColsToAverage.add(col.getName());
+			}
+			// get all external edges, includes both meta edges and edges from any node in the group to any other node in the network
+			// not sure why we cannot get the neighbors using network.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
+			Set<CyEdge> externalEdges = group.getExternalEdgeList();
+			for (CyEdge newEdge : externalEdges) {
+				Boolean edgeTypeMeta = group.getRootNetwork().getRow(newEdge, CyNetwork.HIDDEN_ATTRS).get("__isMetaEdge", Boolean.class);
+				Boolean edgeAggregated = group.getRootNetwork().getRow(newEdge).get(SharedProperties.EDGEAGGREGATED, Boolean.class);
+				// ignore edge if it is NOT a meta edge or if we already aggregated the attributes for it
+				if (edgeTypeMeta == null || !edgeTypeMeta || (edgeAggregated != null && edgeAggregated))
+					continue;
+				System.out.println("aggregate edge attributes for edge with SUID " + newEdge.getSUID());
+				CyNode source = newEdge.getSource();
+				CyNode target = newEdge.getTarget();
+				if (group.getNodeList().contains(source)) {
+					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(source)), target, edgeColsToAverage);					
+				} else if (group.getNodeList().contains(target)) {
+					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(target)), source, edgeColsToAverage);
+				} else {
+					System.out.println("neither source nor target is a node in the group that was uncollapsed");
+				}
+					
+			}
+		}
+	}
+
+	
+	public void aggregateGroupEdgeAttributes(CyNetwork retrievedNetwork, CyGroup group, CyEdge newEdge, List<CyNode> groupNodes, CyNode neighbor, List<String> edgeColsToAggregate) {
+		CyNetwork rootNetwork = group.getRootNetwork(); 
+		CyGroupManager groupManager = getService(CyGroupManager.class);
+		// System.out.println(retrievedNetwork.getRow(neighbor).get(CyNetwork.NAME, String.class));
+		// find out which edges we need to average
+		List<CyEdge> edgesToAggregate = new ArrayList<CyEdge>();
+		int numPossibleEdges = groupNodes.size();
+		if (groupManager.isGroup(neighbor, retrievedNetwork)) {
+			// if the neighbor is a group node, get the edges between nodes of both groups
+			//System.out.println("found a neighbor that is a group as well: " + neighbor);
+			CySubNetwork groupSubNet = (CySubNetwork)neighbor.getNetworkPointer();
+			numPossibleEdges *= groupSubNet.getNodeCount();
+			for (CyNode group1Node : groupSubNet.getNodeList()) {
+				for (CyNode group2Node : groupNodes) {
+					edgesToAggregate.addAll(rootNetwork.getConnectingEdgeList(group1Node, group2Node, Type.ANY));
+				}
+			}
+			//System.out.println("edges to average: " + edgesToAverage.size());
+		} else {
+			//System.out.println("found a normal neighbor: " + neighbor);
+			for (CyNode groupNode : groupNodes) {
+				edgesToAggregate.addAll(rootNetwork.getConnectingEdgeList(groupNode, neighbor, Type.ANY));
+			}
+		}
+		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPOSSIBLE, Integer.valueOf(numPossibleEdges));
+		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEEXISTING, Integer.valueOf(edgesToAggregate.size()));
+		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPROB, Double.valueOf((double)edgesToAggregate.size()/numPossibleEdges));
+		// now get the average and set it for each column
+		for (String col : edgeColsToAggregate) {
+			double averagedValue = 0.0;
+			for (CyEdge edge : edgesToAggregate) {
+				Double edgeValue = rootNetwork.getRow(edge).get(col, Double.class);
+				if (edgeValue != null) 
+					averagedValue += edgeValue.doubleValue();
+			}
+			if (averagedValue != 0.0) {
+				// TODO: shorten to 6 digits precision or not?
+				retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/edgesToAggregate.size()));							
+			}
+		}
+		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
+	}
+
+	@Override
+	public void handleEvent(SelectedNodesAndEdgesEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
+	
 
 	@Override
 	public void handleEvent(GroupAboutToCollapseEvent e) {
@@ -150,16 +270,13 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		//		+ e.getNetwork().getRow(e.getSource().getGroupNode()).get(CyNetwork.NAME, String.class));
 	}
 
-	@Override
-	public void handleEvent(GroupCollapsedEvent e) {
-		// TODO Auto-generated method stub
-		// e.getSource().getGroupNode();
-	}
 
 	@Override
 	public void handleEvent(GroupEdgesAddedEvent e) {
 		// TODO Auto-generated method stub
+		// System.out.println("added edges + " + e.getEdges());
 	}
 
+	
 	
 }

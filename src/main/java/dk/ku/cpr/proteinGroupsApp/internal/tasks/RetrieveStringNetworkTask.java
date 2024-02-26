@@ -15,6 +15,7 @@ import javax.swing.JOptionPane;
 import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.group.CyGroup;
 import org.cytoscape.group.CyGroupFactory;
+import org.cytoscape.group.CyGroupManager;
 import org.cytoscape.model.CyColumn;
 import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyEdge.Type;
@@ -199,9 +200,15 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			// add needed columns
 			manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 					SharedProperties.USE_ENRICHMENT, false);
+			manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
+					SharedProperties.EDGEAGGREGATED, false);
 			manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
-					SharedProperties.EDGEPROB, 0.0);
-
+					SharedProperties.EDGEPROB, null);
+			manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
+					SharedProperties.EDGEPOSSIBLE, null);
+			manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
+					SharedProperties.EDGEEXISTING, null);
+			
 			// duplicate nodes (and their adjacent edges) if they belong to more than one
 			// protein group
 			HashMap<CyNode, LinkedHashSet<CyNode>> protein2dupProteinsMap = new HashMap<CyNode, LinkedHashSet<CyNode>>();
@@ -254,9 +261,9 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 			// find all PGs with more than one node and create group nodes for them
 			CyGroupFactory groupFactory = manager.getService(CyGroupFactory.class);
-			// TODO: fix some group setting here before creating the nodes?
+			CyGroupManager groupManager = manager.getService(CyGroupManager.class);
+			// TODO: fix some cyGroup setting here before creating the nodes?
 			List<CyGroup> groups = new ArrayList<CyGroup>();
-			Set<CyNode> groupsAsNodes = new HashSet<CyNode>();
 			for (String pg : protected_pg2proteinsMap.keySet()) {
 				List<String> proteins = protected_pg2proteinsMap.get(pg);
 				List<CyNode> nodesForGroup = new ArrayList<>();
@@ -288,28 +295,28 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodesForGroup, null, true);
 				groups.add(pgGroup);
 				CyNode groupNode = pgGroup.getGroupNode();
-				groupsAsNodes.add(groupNode);
 
 				// Node attributes that are group-specific
 				// set protein group query term to be the PD name such that import of data works properly
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
-				retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, "protein group");
-				
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, "protein group");				
 				// set group node to be used for enrichment with the string ID of the repr node
 				// TODO: this might change eventually but ok like this for now
 				retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
-
+				// style is getting fixed when we collapse/uncollapse
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
+				
 				// Node attributes that are copied from the representative node
-				// name, canonical name, database identifier (STRINGID), @id, namespace, species, imageurl, enhanced label
-				// TODO: what to do with style?
-				// retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
+				// name, database identifier (STRINGID), @id, namespace, species, enhanced label
+				// NAME, STRINGID, ID, NAMESPACE, SPECIES, ELABEL_STYLE
 				for (String attr : SharedProperties.nodeAttrinbutesToCopyString) {
 					retrievedNetwork.getRow(groupNode).set(attr,
 							retrievedNetwork.getRow(reprNode).get(attr, String.class));					
 				}
 				
 				// Node attributes (string) that are concatenated
-				// display name, full name, description, sequence, dev. level, family
+				// canonical, display name, full name, dev. level, family
+				// CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY
 				// TODO: what to do with canonical? --> fix in stringApp?
 				for (String attr : SharedProperties.nodeAttrinbutesToConcatString) {
 					String concatValue = "";
@@ -366,71 +373,34 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 						
 			// do edge attribute aggregation for the stringdb namespace columns
 			Collection<CyColumn> stringdbCols = retrievedNetwork.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
-			List<String> edgeColsToAverage = new ArrayList<String>();
+			List<String> edgeColsToAggregate = new ArrayList<String>();
 			for (CyColumn col : stringdbCols) {
 				if (col == null || !col.getType().equals(Double.class)) 
 					continue;
-				edgeColsToAverage.add(col.getName());
+				edgeColsToAggregate.add(col.getName());
 			}
 			
 			for (CyGroup group : groups) {
-				System.out.println("aggregating edges for group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
+				System.out.println("aggregating edge attributes for group "
+						+ retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: "
+						+ group.getGroupNode().getSUID() + ")");
 				// group network is a network representation of the nodes in the group and the edges that connect them
-				// CyNetwork groupNetwork = group.getGroupNetwork(); 				
+				// CyNetwork groupNetwork = group.getGroupNetwork();
 				// root network is the network that contains the group and the retrieved network?! NOT the same as the retrieved network above
-				CyNetwork rootNetwork = group.getRootNetwork();				
-				// get all nodes in the group
-				List<CyNode> groupNodes = group.getNodeList();
+				// CyNetwork rootNetwork = group.getRootNetwork();				
 				// get all external edges, includes both meta edges and edges from any node in the group to any other node in the network 
 				// Set<CyEdge> externalEdges = group.getExternalEdgeList();
 				// the adjacent edges to the node representing the group are all meta edges between the group and other nodes, so they are not the same as the external edges
 				List<CyEdge> groupNodeEdges = retrievedNetwork.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
 				for (CyEdge newEdge : groupNodeEdges) {
-					// System.out.println("Group node edge from retrieved: " + newEdge);
-					// CyRow row = retrievedNetwork.getRow(newEdge, CyNetwork.HIDDEN_ATTRS);
-					// if (row != null && row.isSet("__isMetaEdge"))
-					// 	System.out.println("ISMETA =  " + row.get("__isMetaEdge", Boolean.class));
 					// find the neighbor
 					CyNode neighbor = null;
 					if (group.getGroupNode().equals(newEdge.getSource())) 
 						neighbor = newEdge.getTarget();
 					else 
 						neighbor = newEdge.getSource();
-					// System.out.println(retrievedNetwork.getRow(neighbor).get(CyNetwork.NAME, String.class));
-					// find out which edges we need to average
-					List<CyEdge> edgesToAverage = new ArrayList<CyEdge>();
-					if (groupsAsNodes.contains(neighbor)) {
-						// if the neighbor is a group node, get the edges between nodes of both groups
-						//System.out.println("found a neighbor that is a group as well: " + neighbor);
-						CySubNetwork groupSubNet = (CySubNetwork)neighbor.getNetworkPointer();
-						for (CyNode group1Node : groupSubNet.getNodeList()) {
-							for (CyNode group2Node : groupNodes) {
-								edgesToAverage.addAll(rootNetwork.getConnectingEdgeList(group1Node, group2Node, Type.ANY));
-							}
-						}
-						//System.out.println("edges to average: " + edgesToAverage.size());
-					} else {
-						//System.out.println("found a normal neighbor: " + neighbor);
-						for (CyNode groupNode : groupNodes) {
-							edgesToAverage.addAll(rootNetwork.getConnectingEdgeList(groupNode, neighbor, Type.ANY));
-						}
-						//System.out.println("with edges to average: " + edgesToAverage);
-					}
-					retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPROB, Double.valueOf((double)edgesToAverage.size()/groupNodes.size()));
-					// now get the average and set it for each column
-					for (String col : edgeColsToAverage) {
-						double averagedValue = 0.0;
-						for (CyEdge edge : edgesToAverage) {
-							Double edgeValue = rootNetwork.getRow(edge).get(col, Double.class);
-							if (edgeValue != null) 
-								averagedValue += edgeValue.doubleValue();
-						}
-						if (averagedValue != 0.0) {
-							// TODO: shorten to 6 digits precision or not?
-							retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/edgesToAverage.size()));							
-						}
-					}
-					// TODO: in theory we need to assign scores to the meta edges of the uncollapsed group... how to best do that?
+					// aggregate edge attributes 
+					manager.aggregateGroupEdgeAttributes(retrievedNetwork, group, newEdge, group.getNodeList(), neighbor, edgeColsToAggregate);
 				}
 			}
 		}

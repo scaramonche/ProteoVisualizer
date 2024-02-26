@@ -64,13 +64,16 @@ public class SharedProperties {
 	public static String DEVLEVEL = TARGET_NAMESPACE + NAMESPACE_SEPARATOR + "development level";
 	public static String FAMILY = TARGET_NAMESPACE + NAMESPACE_SEPARATOR + "family";
 	
-	public static List<String> nodeAttrinbutesToCopyString = new ArrayList<String>(Arrays.asList(CyNetwork.NAME, CANONICAL, STRINGID, ID, NAMESPACE, SPECIES, IMAGE, ELABEL_STYLE));
+	public static List<String> nodeAttrinbutesToCopyString = new ArrayList<String>(Arrays.asList(CyNetwork.NAME, STRINGID, ID, NAMESPACE, SPECIES, ELABEL_STYLE));
 	
-	public static List<String> nodeAttrinbutesToConcatString = new ArrayList<String>(Arrays.asList(DISPLAY, FULLNAME, DESCRIPTION, SEQUENCE, DEVLEVEL, FAMILY));
+	public static List<String> nodeAttrinbutesToConcatString = new ArrayList<String>(Arrays.asList(CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY));
 
 
 	// Edge information
 	public static String EDGEPROB = "edge prob";
+	public static String EDGEPOSSIBLE = "#possible edges";
+	public static String EDGEEXISTING = "#existing edges";
+	public static String EDGEAGGREGATED = "aggregated";
 
 	
 	// We forbid the class to have instances
