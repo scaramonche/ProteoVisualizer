@@ -37,6 +37,7 @@
 						<Embed-Transitive>true</Embed-Transitive>
 						<Import-Package>*;resolution:=optional</Import-Package>
 						<Cytoscape-App-Dependencies>
+										stringApp;2.0.0
 						</Cytoscape-App-Dependencies>
 					</instructions>
 				</configuration>
