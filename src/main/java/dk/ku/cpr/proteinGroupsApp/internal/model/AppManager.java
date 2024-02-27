@@ -250,7 +250,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		}
 		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPOSSIBLE, Integer.valueOf(numPossibleEdges));
 		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEEXISTING, Integer.valueOf(edgesToAggregate.size()));
-		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPROB, Double.valueOf((double)edgesToAggregate.size()/numPossibleEdges));
+		// retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEPROB, Double.valueOf((double)edgesToAggregate.size()/numPossibleEdges));
 		// now get the average and set it for each column
 		for (String col : edgeColsToAggregate) {
 			double averagedValue = 0.0;
@@ -261,10 +261,11 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 			}
 			if (averagedValue != 0.0) {
 				// TODO: shorten to 6 digits precision or not?
-				// TODO: should we change for edge attributes that we average based on number of edges?
-				retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/edgesToAggregate.size()));							
+				// for edge attributes, we sum the values from all existing edges and divide by the number of possible edges
+				retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/numPossibleEdges));							
 			}
 		}
+		// TODO: [Release] Remove this attribute
 		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
 	}
 

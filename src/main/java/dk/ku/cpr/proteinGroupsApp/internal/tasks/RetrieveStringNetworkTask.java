@@ -207,19 +207,20 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// create a map of query term to node
 		HashMap<String, CyNode> queryTerm2node = new HashMap<String, CyNode>();
 		for (CyNode node : retrievedNetwork.getNodeList()) {
-			String queryTerm = retrievedNetwork.getRow(node).get("query term", String.class);
+			String queryTerm = retrievedNetwork.getRow(node).get(SharedProperties.QUERYTERM, String.class);
 			if (queryTerm != null) {
 				queryTerm2node.put(queryTerm, node);
 			}
 		}
 
+		// TODO: [Release] Remove columns that are not needed
 		// add needed new columns
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 				SharedProperties.USE_ENRICHMENT, false);
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
 				SharedProperties.EDGEAGGREGATED, false);
-		manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
-				SharedProperties.EDGEPROB, null);
+		//manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
+		//		SharedProperties.EDGEPROB, null);
 		manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
 				SharedProperties.EDGEPOSSIBLE, null);
 		manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
@@ -265,10 +266,10 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				}
 				// add a new identity edge between the duplicated nodes
 				CyEdge newIdentityEdge = retrievedNetwork.addEdge(proteinNode, newDuplNode, false);
-				retrievedNetwork.getRow(newIdentityEdge).set(CyEdge.INTERACTION, "identity");
+				retrievedNetwork.getRow(newIdentityEdge).set(CyEdge.INTERACTION, SharedProperties.EDGE_TYPE_IDENTITY);
 				// TODO: why is this needed?
 				retrievedNetwork.getRow(newIdentityEdge).set(CyNetwork.NAME,
-						retrievedNetwork.getRow(proteinNode).get(CyNetwork.NAME, String.class) + " (identity) "
+						retrievedNetwork.getRow(proteinNode).get(CyNetwork.NAME, String.class) + " (" + SharedProperties.EDGE_TYPE_IDENTITY + ") "
 								+ retrievedNetwork.getRow(newDuplNode).get(CyNetwork.NAME, String.class));
 			}
 			protein2dupProteinsMap.put(proteinNode, duplicatedNodes);
@@ -317,9 +318,9 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, SharedProperties.NODE_TYPE_PG);				
 			// set group node to be used for enrichment with the string ID of the repr node
 			// TODO: USE_ENRICHMENT might change eventually but ok like this for now
-			retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, true);
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, Boolean.valueOf(true));
 			// style is getting fixed when we collapse/uncollapse
-			retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "string:");
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, SharedProperties.STYLE_STRING_EMPTY);
 			
 			// Node attributes that are copied from the representative node
 			// name, database identifier (STRINGID), @id, namespace, species, enhanced label
@@ -338,9 +339,9 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					String nodeValue = retrievedNetwork.getRow(node).get(attr, String.class);
 					if (nodeValue == null) 
 						continue;
-					concatValue += ";" + nodeValue;
+					concatValue += SharedProperties.ATTRIBUTE_CONCAT_SYMBOL + nodeValue;
 				}
-				if (concatValue.startsWith(";"))
+				if (concatValue.startsWith(SharedProperties.ATTRIBUTE_CONCAT_SYMBOL))
 					concatValue = concatValue.substring(1);
 				retrievedNetwork.getRow(groupNode).set(attr, concatValue);
 			}
@@ -362,7 +363,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			colsToAverage.add(retrievedNetwork.getDefaultNodeTable().getColumn(SharedProperties.INTERACTORSCORE));
 			for (CyColumn col : colsToAverage) {
 				double averagedValue = 0.0;
-				int numValues = 0;
+				//int numValues = 0;
 				if (col == null) 
 					continue;
 				for (CyNode node : nodesForGroup) {
@@ -370,11 +371,11 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					if (nodeValue == null) 
 						continue;
 					averagedValue += nodeValue.doubleValue();
-					numValues += 1;
+					//numValues += 1;
 				}
+				// for node attributes, we average based on number of group nodes, e.g. a node with a missing value is considered to have a value = 0 
 				// TODO: shorten to 6 digits precision or not?
-				// TODO: should we change for node attributes that we average based on number of values instead of number of group nodes ? 
-				retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/numValues));
+				retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/nodesForGroup.size()));
 			}
 		}
 
@@ -446,16 +447,14 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// lay out network after collapsing groups 
 		CyNetworkView networkView = manager.getCurrentNetworkView();
 		if (networkView != null && networkView.getModel().equals(retrievedNetwork)) {
-			CyLayoutAlgorithm alg = manager.getService(CyLayoutAlgorithmManager.class)
-					.getLayout("force-directed");
+			CyLayoutAlgorithm alg = manager.getService(CyLayoutAlgorithmManager.class).getLayout("force-directed");
 			Object context = alg.createLayoutContext();
 			TunableSetter setter = manager.getService(TunableSetter.class);
 			Map<String, Object> layoutArgs = new HashMap<>();
 			layoutArgs.put("defaultNodeMass", 10.0);
 			setter.applyTunables(context, layoutArgs);
 			Set<View<CyNode>> nodeViews = new HashSet<>(networkView.getNodeViews());
-			insertTasksAfterCurrentTask(
-					alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
+			insertTasksAfterCurrentTask(alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
 		}
 	}
 
