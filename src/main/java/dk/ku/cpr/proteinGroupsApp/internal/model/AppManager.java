@@ -266,7 +266,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 			}
 		}
 		// TODO: [Release] Remove this attribute
-		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
+		// getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
 	}
 
 	@Override

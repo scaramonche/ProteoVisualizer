@@ -217,8 +217,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// add needed new columns
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 				SharedProperties.USE_ENRICHMENT, false);
-		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
-				SharedProperties.EDGEAGGREGATED, false);
+		//manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
+		//		SharedProperties.EDGEAGGREGATED, false);
 		//manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
 		//		SharedProperties.EDGEPROB, null);
 		manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
@@ -350,7 +350,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			Set<String> structures = new HashSet<String>();
 			for (CyNode node : nodesForGroup) {
 				List<String> nodeStructures = (List<String>) retrievedNetwork.getRow(node).get(SharedProperties.STRUCTURES, List.class);
-				if (nodeStructures == null)
+				if (nodeStructures == null || nodeStructures.size() == 0 || nodeStructures.get(0).equals(""))
 					continue;
 				structures.addAll(nodeStructures);
 			}
