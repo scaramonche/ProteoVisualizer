@@ -69,6 +69,19 @@ public class StringSpecies implements Comparable<StringSpecies> {
 		return allSpecies;
 	}
 
+	public static StringSpecies getSpecies(String speciesName) {
+		if (nameSpecies == null || speciesName == null) return null;
+		if (nameSpecies.containsKey(speciesName))
+			return nameSpecies.get(speciesName);
+
+		if (allSpecies == null) return null;
+		for (StringSpecies s: allSpecies) {
+			if (s.getName().equalsIgnoreCase(speciesName))
+				return s;
+		}
+		return null;
+	}
+
 	public static StringSpecies getHumanSpecies() {
 		return humanSpecies;
 	}

@@ -30,6 +30,8 @@ public class SharedProperties {
 	/** Name of the stringApp command to list species. */
 	public static final String STRING_CMD_LIST_SPECIES = "list species";
 
+
+	public static final int defaultConfidence = 70;
 	
 	// App specific terms
 	public static String NODE_TYPE_PG = "protein group";

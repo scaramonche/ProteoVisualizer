@@ -58,8 +58,6 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 
 	private static final long serialVersionUID = -6267319220376028418L;
 
-	private static final int defaultConfidence = 70;
-
 	private JTextArea queryInput;
 	private JTextField netName;
 
@@ -89,9 +87,14 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 		this.speciesList = new ArrayList<StringSpecies>();
 		this.selectSpecies = new JComboBox<StringSpecies>(speciesList.toArray(new StringSpecies[1]));
 
-		this.functionalNetwork = new JRadioButton(NetworkType.FUNCTIONAL.toString(), true);
-		this.physicalNetwork = new JRadioButton(NetworkType.PHYSICAL.toString(), false);
-		this.networkType = NetworkType.FUNCTIONAL;
+		this.networkType = manager.getDefaultNetworkType();
+		if (this.networkType.equals(NetworkType.FUNCTIONAL)) {
+			this.functionalNetwork = new JRadioButton(NetworkType.FUNCTIONAL.toString(), true);
+			this.physicalNetwork = new JRadioButton(NetworkType.PHYSICAL.toString(), false);
+		} else {
+			this.functionalNetwork = new JRadioButton(NetworkType.FUNCTIONAL.toString(), false);
+			this.physicalNetwork = new JRadioButton(NetworkType.PHYSICAL.toString(), true);			
+		}
 
 		this.confidenceSlider = new JSlider();
 		this.confidenceValue = new JTextField();
@@ -164,7 +167,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 			}
 			confidenceSlider.setLabelTable(labels);
 			confidenceSlider.setPaintLabels(true);
-			confidenceSlider.setValue(RetrieveStringNetworkWindow.defaultConfidence);
+			confidenceSlider.setValue(SharedProperties.defaultConfidence);
 
 			confidenceSlider.addChangeListener(new ChangeListener() {
 				@Override
@@ -185,7 +188,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 			confidenceValue = new JTextField(4);
 			confidenceValue.setHorizontalAlignment(JTextField.RIGHT);
 			confidenceValue
-					.setText(this.formatter.format(((double) RetrieveStringNetworkWindow.defaultConfidence) / 100.0));
+					.setText(this.formatter.format(((double) SharedProperties.defaultConfidence) / 100.0));
 			c.nextCol().noExpand().setAnchor("C");// .setInsets(0,5,0,5);
 			confidencePanel.add(confidenceValue, c);
 
@@ -248,7 +251,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 	@Override
 	public void setVisible(boolean b) {
 		if (b) {
-			this.confidenceSlider.setValue(defaultConfidence);
+			this.confidenceSlider.setValue(SharedProperties.defaultConfidence);
 			init();
 		}
 
@@ -306,6 +309,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 	@SuppressWarnings("unchecked")
 	@Override
 	public void taskFinished(ObservableTask task) {
+		// TODO: move this code to a utility class 
 		if (task.getClass().getSimpleName().equals("GetSpeciesTask")) {
 			List<Map<String, String>> res = task.getResults(List.class);
 
@@ -318,7 +322,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 
 			this.selectSpecies = new JComboBox<StringSpecies>(speciesList.toArray(new StringSpecies[1]));
 			// We select Human as default
-			this.selectSpecies.setSelectedItem(StringSpecies.getHumanSpecies());
+			this.selectSpecies.setSelectedItem(manager.getDefaultSpecies());
 
 			JComboBoxDecorator decorator = new JComboBoxDecorator(this.selectSpecies, true, true, speciesList);
 			decorator.decorate(speciesList);

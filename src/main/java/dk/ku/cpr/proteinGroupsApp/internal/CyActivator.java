@@ -14,13 +14,13 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.cytoscape.application.CyUserLog;
+import org.cytoscape.application.swing.search.NetworkSearchTaskFactory;
 import org.cytoscape.group.CyGroupSettingsManager;
 import org.cytoscape.group.CyGroupSettingsManager.DoubleClickAction;
 import org.cytoscape.group.CyGroupSettingsManager.GroupViewType;
 import org.cytoscape.group.events.GroupAboutToCollapseListener;
 import org.cytoscape.group.events.GroupCollapsedListener;
 import org.cytoscape.group.events.GroupEdgesAddedListener;
-import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.work.TaskFactory;
@@ -31,6 +31,7 @@ import dk.ku.cpr.proteinGroupsApp.internal.model.AppManager;
 import dk.ku.cpr.proteinGroupsApp.internal.model.SharedProperties;
 import dk.ku.cpr.proteinGroupsApp.internal.tasks.AboutTaskFactory;
 import dk.ku.cpr.proteinGroupsApp.internal.tasks.ShowRetrieveWindowTaskFactory;
+import dk.ku.cpr.proteinGroupsApp.internal.tasks.StringPGSearchTaskFactory;
 
 public class CyActivator extends AbstractCyActivator {
 	String JSON_EXAMPLE = "{\"SUID\":1234}";
@@ -53,6 +54,12 @@ public class CyActivator extends AbstractCyActivator {
 		Version v = bc.getBundle().getVersion();
 		String version = v.toString(); // The full version
 
+		{
+			StringPGSearchTaskFactory stringSearch = new StringPGSearchTaskFactory(manager);
+			Properties propsSearch = new Properties();
+			registerService(bc, stringSearch, NetworkSearchTaskFactory.class, propsSearch);
+		}
+		
 		{
 			// Register our listeners
 			registerService(bc, manager, GroupAboutToCollapseListener.class, new Properties());

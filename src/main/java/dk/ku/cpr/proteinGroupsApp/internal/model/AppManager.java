@@ -302,6 +302,15 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		// System.out.println("added edges + " + e.getEdges());
 	}
 
+	public int getDefaultConfidence() {
+		return SharedProperties.defaultConfidence;
+	}
 	
-	
+	public NetworkType getDefaultNetworkType() {
+		return NetworkType.FUNCTIONAL;
+	}
+
+	public StringSpecies getDefaultSpecies() {
+		return StringSpecies.getHumanSpecies();
+	}
 }

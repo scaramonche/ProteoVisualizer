@@ -379,6 +379,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			}
 		}
 
+		// TODO: decide how to handle networks with confidence 1.0, that might contain only identity edges!
+		
 		// collapse all the groups
 		// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
 		for (CyGroup group : groups) {
