@@ -19,7 +19,6 @@ import javax.swing.SwingUtilities;
 import org.apache.log4j.Logger;
 import org.cytoscape.application.CyUserLog;
 import org.cytoscape.application.swing.search.AbstractNetworkSearchTaskFactory;
-import org.cytoscape.util.swing.TextIcon;
 import org.cytoscape.work.FinishStatus;
 import org.cytoscape.work.ObservableTask;
 import org.cytoscape.work.TaskIterator;
@@ -29,12 +28,13 @@ import dk.ku.cpr.proteinGroupsApp.internal.model.AppManager;
 import dk.ku.cpr.proteinGroupsApp.internal.model.StringSpecies;
 import dk.ku.cpr.proteinGroupsApp.internal.ui.SearchOptionsPanel;
 import dk.ku.cpr.proteinGroupsApp.internal.ui.SearchQueryComponent;
+import dk.ku.cpr.proteinGroupsApp.internal.utils.TextIcon;
 
 public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory implements TaskObserver {
 	AppManager manager;
 	static String STRING_ID = "dk.ku.cpr.pg.string";
 	static String STRING_URL = "http://string-db.org";
-	static String STRING_NAME = "Proteo Visualizer query";
+	static String STRING_NAME = "STRING: protein groups query";
 	static String STRING_DESC = "Search STRING for protein-protein interactions";
 	static String STRING_DESC_LONG = "<html>The protein query retrieves a STRING network for one or more proteins. <br />"
 										+ "STRING is a database of known and predicted protein interactions for <br />"
@@ -47,9 +47,11 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 	private SearchQueryComponent queryComponent = null;
 	private final Logger logger = Logger.getLogger(CyUserLog.NAME);
 	
-	private static final Font iconFont = new Font("Monospaced", Font.PLAIN, 10);
-	private static final Icon icon = new TextIcon("PV", iconFont, Color.BLACK, 36, 36);
-
+	private static final Font iconFont = new Font("Monospaced", Font.PLAIN, 6);
+	private static final Icon icon = new TextIcon("Proteo Visualizer", iconFont, Color.BLACK, 36, 36);
+	// private static final Icon icon = new TextIcon(IconUtils.STRING_LAYERS, IconUtils.getIconFont(32.0f), IconUtils.STRING_COLORS, 36, 36);
+	
+	
 	private static URL stringURL() {
 		try {
 			return new URL(STRING_URL);

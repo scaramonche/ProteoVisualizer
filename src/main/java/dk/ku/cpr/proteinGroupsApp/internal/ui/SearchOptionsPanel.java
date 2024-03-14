@@ -43,7 +43,6 @@ import dk.ku.cpr.proteinGroupsApp.internal.model.SharedProperties;
 import dk.ku.cpr.proteinGroupsApp.internal.model.StringSpecies;
 import dk.ku.cpr.proteinGroupsApp.internal.tasks.StringCommandTaskFactory;
 
-// TODO: [Optional] Improve non-gui mode
 public class SearchOptionsPanel extends JPanel implements TaskObserver { 
 	//StringNetwork stringNetwork = null;
 	//StringNetwork initialStringNetwork = null;
@@ -75,7 +74,7 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 		TaskIterator ti = factory.createTaskIterator();
 		this.manager.executeSynchronousTask(ti);
 		initOptions();
-		setPreferredSize(new Dimension(700,200));
+		setPreferredSize(new Dimension(700,125));
 	}
 
 	private void initOptions() {
