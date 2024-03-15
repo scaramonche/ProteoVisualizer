@@ -48,7 +48,7 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 	private final Logger logger = Logger.getLogger(CyUserLog.NAME);
 	
 	private static final Font iconFont = new Font("Monospaced", Font.PLAIN, 6);
-	private static final Icon icon = new TextIcon("Proteo Visualizer", iconFont, Color.BLACK, 36, 36);
+	private static final Icon icon = new TextIcon("ProteoVis", iconFont, Color.BLACK, 36, 36);
 	// private static final Icon icon = new TextIcon(IconUtils.STRING_LAYERS, IconUtils.getIconFont(32.0f), IconUtils.STRING_COLORS, 36, 36);
 	
 	

@@ -41,7 +41,7 @@ public class CyActivator extends AbstractCyActivator {
 	}
 
 	public void start(BundleContext bc) {
-		System.out.println("Starting Protein Groups App!");
+		System.out.println("Starting Proteo Visualizer!");
 
 		// Get a handle on the CyServiceRegistrar
 		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
@@ -108,16 +108,16 @@ public class CyActivator extends AbstractCyActivator {
 			// command properties
 			aboutProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
 			aboutProps.setProperty(COMMAND, "about");
-			aboutProps.setProperty(COMMAND_DESCRIPTION, "Return the about URL of ProteinGroupsApp.");
-			aboutProps.setProperty(COMMAND_LONG_DESCRIPTION, "Returns the about URL of ProteinGroupsApp.");
+			aboutProps.setProperty(COMMAND_DESCRIPTION, "Return the about URL of Proteo Visualizer.");
+			aboutProps.setProperty(COMMAND_LONG_DESCRIPTION, "Returns the about URL of Proteo Visualizer.");
 			aboutProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
 			// versionProps.setProperty(COMMAND_EXAMPLE_JSON, "{\"version\":\"1.0.0\"}");
 			registerService(bc, aboutFactory, TaskFactory.class, aboutProps);
 		}
 
 
-		logger.info("ProteinGroupsApp " + version + " initialized.");
-		System.out.println("ProteinGroupsApp " + version + " initialized.");
+		logger.info("Proteo Visualizer " + version + " initialized.");
+		System.out.println("Proteo Visualizer " + version + " initialized.");
 	
 	}
 }

@@ -14,13 +14,16 @@ import org.cytoscape.work.ServiceProperties;
 public class SharedProperties {
 
 	/** The prefix form hidden attributes. */
-	public static final String APP_PREFIX = "dk.ku.cpr.proteinGroupsApp.";
+	public static final String APP_PREFIX = "dk.ku.cpr.proteoVisualizer.";
 
 	/** The menu where we store the actions. */
-	public static final String APP_PREFERRED_MENU = ServiceProperties.APPS_MENU + ".Protein Groups";
+	public static final String APP_PREFERRED_MENU = ServiceProperties.APPS_MENU + ".Proteo Visualizer";
 
 	/** The namespace of the commands. */
-	public static final String APP_COMMAND_NAMESPACE = "proteinGroups";
+	public static final String APP_COMMAND_NAMESPACE = "proteoVisualizer";
+
+	public static final String ABOUT_URI = "https://apps.cytoscape.org/apps/ProteoVisualizer";
+
 
 	/**
 	 * Name of the stringApp command to query proteins. This is used to retrieve a
