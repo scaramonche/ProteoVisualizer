@@ -326,6 +326,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			// name, database identifier (STRINGID), @id, namespace, species, enhanced label
 			// NAME, STRINGID, ID, NAMESPACE, SPECIES, ELABEL_STYLE
 			for (String attr : SharedProperties.nodeAttrinbutesToCopyString) {
+				if (retrievedNetwork.getDefaultNodeTable().getColumn(attr) == null)
+					continue;
 				retrievedNetwork.getRow(groupNode).set(attr,
 						retrievedNetwork.getRow(reprNode).get(attr, String.class));					
 			}
@@ -334,6 +336,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			// canonical, display name, full name, dev. level, family
 			// CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY
 			for (String attr : SharedProperties.nodeAttrinbutesToConcatString) {
+				if (retrievedNetwork.getDefaultNodeTable().getColumn(attr) == null)
+					continue;
 				String concatValue = "";
 				for (CyNode node : nodesForGroup) {
 					String nodeValue = retrievedNetwork.getRow(node).get(attr, String.class);
@@ -347,14 +351,16 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			}
 			// Node attributes (list of strings) that are concatenated
 			// structures
-			Set<String> structures = new HashSet<String>();
-			for (CyNode node : nodesForGroup) {
-				List<String> nodeStructures = (List<String>) retrievedNetwork.getRow(node).get(SharedProperties.STRUCTURES, List.class);
-				if (nodeStructures == null || nodeStructures.size() == 0 || nodeStructures.get(0).equals(""))
-					continue;
-				structures.addAll(nodeStructures);
+			if (retrievedNetwork.getDefaultNodeTable().getColumn(SharedProperties.STRUCTURES) != null) {
+				Set<String> structures = new HashSet<String>();
+				for (CyNode node : nodesForGroup) {
+					List<String> nodeStructures = (List<String>) retrievedNetwork.getRow(node).get(SharedProperties.STRUCTURES, List.class);
+					if (nodeStructures == null || nodeStructures.size() == 0 || nodeStructures.get(0).equals(""))
+						continue;
+					structures.addAll(nodeStructures);
+				}
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.STRUCTURES, new ArrayList<String>(structures));
 			}
-			retrievedNetwork.getRow(groupNode).set(SharedProperties.STRUCTURES, new ArrayList<String>(structures));
 			
 			// Node attributes that are averaged
 			// all compartment cols, all tissue cols, interactor score?
