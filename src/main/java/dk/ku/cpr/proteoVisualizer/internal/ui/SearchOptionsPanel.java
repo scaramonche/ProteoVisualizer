@@ -72,7 +72,11 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 		StringCommandTaskFactory factory = new StringCommandTaskFactory(this.manager,
 				SharedProperties.STRING_CMD_LIST_SPECIES, null, this);
 		TaskIterator ti = factory.createTaskIterator();
-		this.manager.executeSynchronousTask(ti);
+		try {
+			this.manager.executeSynchronousTask(ti);
+		} catch (RuntimeException ex) {
+			// ignore
+		}
 		initOptions();
 		setPreferredSize(new Dimension(700,125));
 	}
@@ -100,6 +104,8 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 		// Create the species panel
 		// Retrieve only the list of main species for now, otherwise the dialogs are very slow
 		List<StringSpecies> speciesList = StringSpecies.getModelSpecies();
+		if (speciesList == null)
+			return new ArrayList<StringSpecies>();
 		return speciesList;
 	}
 
