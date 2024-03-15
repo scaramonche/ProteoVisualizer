@@ -1,1 +1,1 @@
-# ProteinGroupsApp
+# Proteo Visualizer App for Cytoscape
