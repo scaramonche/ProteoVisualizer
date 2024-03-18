@@ -294,17 +294,21 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 						proteinNode = protein2dupProteinsMap.get(copyNode).iterator().next();
 						protein2dupProteinsMap.get(copyNode).remove(proteinNode);
 					}
+					// if this is the first node in the list, set it as the representative node
 					if (proteinCount == 0) {
 						reprNode = proteinNode;
 					} 
+					// add to list with group nodes and count up
 					nodesForGroup.add(proteinNode);							
+					proteinCount += 1;
 				}
-				proteinCount += 1;
 			}
 			// if group only had one protein, set this node to be used for enrichment and go to the next protein group
 			if (nodesForGroup.size() <= 1) {
-				// set the use for enrichment flag and continue with the others
-				retrievedNetwork.getRow(reprNode).set(SharedProperties.USE_ENRICHMENT, true);
+				// set the use for enrichment flag if there is at least one protein
+				if (reprNode != null)
+					retrievedNetwork.getRow(reprNode).set(SharedProperties.USE_ENRICHMENT, true);
+				// continue with the next protein group
 				continue;
 			}
 			// otherwise create and save the new cyGroup
