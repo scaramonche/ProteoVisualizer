@@ -177,17 +177,20 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		CyGroup group = e.getSource();
 		CyNode groupNode = group.getGroupNode();
 		CyNetwork network = e.getNetwork();
+		// TODO: check if string network, and if not ignore the event
 		// CyNetworkView view = getCurrentNetworkView();
 		// View<CyNode> nodeView = view.getNodeView(groupNode);
 		if (e.collapsed()) {
 			// System.out.println("group collapsed");
 			// change style of string node
-			network.getRow(groupNode).set(SharedProperties.STYLE, "string:");
+			if (network.getDefaultNodeTable().getColumn(SharedProperties.STYLE) != null)
+				network.getRow(groupNode).set(SharedProperties.STYLE, "string:");
 			//nodeView.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 255);
 		} else {
 			// System.out.println("group expanded");
 			// change style of string node
-			network.getRow(groupNode).set(SharedProperties.STYLE, "");
+			if (network.getDefaultNodeTable().getColumn(SharedProperties.STYLE) != null)
+				network.getRow(groupNode).set(SharedProperties.STYLE, "");
 			//nodeView.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 50);
 			
 			// aggregate edge attributes if not already done 
@@ -206,7 +209,8 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 				Boolean edgeTypeMeta = group.getRootNetwork().getRow(newEdge, CyNetwork.HIDDEN_ATTRS).get("__isMetaEdge", Boolean.class);
 				Boolean edgeAggregated = group.getRootNetwork().getRow(newEdge).get(SharedProperties.EDGEAGGREGATED, Boolean.class);
 				// ignore edge if it is NOT a meta edge or if we already aggregated the attributes for it
-				if (edgeTypeMeta == null || !edgeTypeMeta || (edgeAggregated != null && edgeAggregated))
+				if (edgeTypeMeta == null || !edgeTypeMeta || (edgeAggregated != null && edgeAggregated)
+						|| network.getDefaultEdgeTable().getColumn(SharedProperties.SCORE) == null)
 					continue;
 				System.out.println("aggregate edge attributes for edge with SUID " + newEdge.getSUID());
 				CyNode source = newEdge.getSource();
@@ -265,8 +269,8 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 				retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/numPossibleEdges));							
 			}
 		}
-		// TODO: [Release] Remove this attribute
-		// getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
+		// TODO: [Release] Hide this attribute if possible, but we needed 
+		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
 	}
 
 	@Override

@@ -217,8 +217,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// add needed new columns
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 				SharedProperties.USE_ENRICHMENT, false);
-		//manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
-		//		SharedProperties.EDGEAGGREGATED, false);
+		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
+				SharedProperties.EDGEAGGREGATED, false);
 		//manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
 		//		SharedProperties.EDGEPROB, null);
 		manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
