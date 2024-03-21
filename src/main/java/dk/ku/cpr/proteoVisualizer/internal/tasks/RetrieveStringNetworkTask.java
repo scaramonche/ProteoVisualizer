@@ -394,7 +394,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// collapse all the groups
 		// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
 		for (CyGroup group : groups) {
-			System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
+			// System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
 			group.collapse(retrievedNetwork);				
 		}
 					
@@ -409,9 +409,9 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		
 		// do edge attribute aggregation for the stringdb namespace columns 
 		for (CyGroup group : groups) {
-			System.out.println("aggregating edge attributes for group "
-					+ retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: "
-					+ group.getGroupNode().getSUID() + ")");
+			//System.out.println("aggregating edge attributes for group "
+			//		+ retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: "
+			//		+ group.getGroupNode().getSUID() + ")");
 			// group network is a network representation of the nodes in the group and the edges that connect them
 			// CyNetwork groupNetwork = group.getGroupNetwork();
 			// root network is the network that contains the group and the retrieved network?! NOT the same as the retrieved network above

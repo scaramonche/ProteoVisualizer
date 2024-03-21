@@ -29,9 +29,11 @@ import org.osgi.framework.Version;
 
 import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
 import dk.ku.cpr.proteoVisualizer.internal.model.SharedProperties;
+import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.AboutTaskFactory;
+import dk.ku.cpr.proteoVisualizer.internal.tasks.RetrieveStringNetworkTaskFactory;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.ShowRetrieveWindowTaskFactory;
-import dk.ku.cpr.proteoVisualizer.internal.tasks.StringPGSearchTaskFactory;
+
 
 public class CyActivator extends AbstractCyActivator {
 	String JSON_EXAMPLE = "{\"SUID\":1234}";
@@ -54,11 +56,8 @@ public class CyActivator extends AbstractCyActivator {
 		Version v = bc.getBundle().getVersion();
 		String version = v.toString(); // The full version
 
-		{
-			StringPGSearchTaskFactory stringSearch = new StringPGSearchTaskFactory(manager);
-			Properties propsSearch = new Properties();
-			registerService(bc, stringSearch, NetworkSearchTaskFactory.class, propsSearch);
-		}
+		// load species AND registering the search task factory
+		StringSpecies.loadSpecies(manager);
 		
 		{
 			// Register our listeners
@@ -85,18 +84,23 @@ public class CyActivator extends AbstractCyActivator {
 			retrieveProps.setProperty(TITLE, "Retrieve STRING network");
 			retrieveProps.setProperty(MENU_GRAVITY, "1.0");
 			retrieveProps.setProperty(IN_MENU_BAR, "true");
-
-			// TODO: use a different task factory for the retrieve string net command
-			// command properties
-			//retrieveProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
-			//retrieveProps.setProperty(COMMAND, "retrieve string");
-			//retrieveProps.setProperty(COMMAND_DESCRIPTION, "Retrieve STRING network with given settings and input.");
-			//retrieveProps.setProperty(COMMAND_LONG_DESCRIPTION, "Retrieve STRING network with given settings and input.");
-			//retrieveProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
-			// versionProps.setProperty(COMMAND_EXAMPLE_JSON, "{\"version\":\"1.0.0\"}");
 			registerService(bc, retrieveFactory, TaskFactory.class, retrieveProps);
 		}
 
+		
+		{
+			RetrieveStringNetworkTaskFactory retrieveFactory = new RetrieveStringNetworkTaskFactory(manager);
+			Properties retrieveProps = new Properties();
+			// command properties
+			retrieveProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
+			retrieveProps.setProperty(COMMAND, "retrieve string");
+			retrieveProps.setProperty(COMMAND_DESCRIPTION, "Retrieve STRING network with given settings and input.");
+			retrieveProps.setProperty(COMMAND_LONG_DESCRIPTION, "Retrieve STRING network with given settings and input.");
+			retrieveProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
+			// versionProps.setProperty(COMMAND_EXAMPLE_JSON, "{\"version\":\"1.0.0\"}");
+			registerService(bc, retrieveFactory, TaskFactory.class, retrieveProps);
+		}
+		
 		{
 			AboutTaskFactory aboutFactory = new AboutTaskFactory(version, registrar);
 			Properties aboutProps = new Properties();

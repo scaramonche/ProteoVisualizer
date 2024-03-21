@@ -20,7 +20,7 @@ public class SharedProperties {
 	public static final String APP_PREFERRED_MENU = ServiceProperties.APPS_MENU + ".Proteo Visualizer";
 
 	/** The namespace of the commands. */
-	public static final String APP_COMMAND_NAMESPACE = "proteoVisualizer";
+	public static final String APP_COMMAND_NAMESPACE = "proteovis";
 
 	public static final String ABOUT_URI = "https://apps.cytoscape.org/apps/ProteoVisualizer";
 

@@ -3,11 +3,16 @@ package dk.ku.cpr.proteoVisualizer.internal.model;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
 import org.cytoscape.application.CyApplicationManager;
+import org.cytoscape.application.swing.search.NetworkSearchTaskFactory;
+import org.cytoscape.command.AvailableCommands;
+import org.cytoscape.command.CommandExecutorTaskFactory;
 import org.cytoscape.group.CyGroup;
 import org.cytoscape.group.CyGroupManager;
 import org.cytoscape.group.events.GroupAboutToCollapseEvent;
@@ -28,20 +33,23 @@ import org.cytoscape.model.subnetwork.CySubNetwork;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.View;
-import org.cytoscape.view.presentation.property.BasicVisualLexicon;
 import org.cytoscape.work.SynchronousTaskManager;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
 
+import dk.ku.cpr.proteoVisualizer.internal.tasks.StringPGSearchTaskFactory;
+
 public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedListener, GroupEdgesAddedListener, SelectedNodesAndEdgesListener {
 
 	private CyServiceRegistrar serviceRegistrar;
+	final AvailableCommands availableCommands;
+	final CommandExecutorTaskFactory ceTaskFactory;
 
 	public AppManager(CyServiceRegistrar serviceRegistrar) {
 		this.serviceRegistrar=serviceRegistrar;
-
+		this.availableCommands = serviceRegistrar.getService(AvailableCommands.class);
+		this.ceTaskFactory = serviceRegistrar.getService(CommandExecutorTaskFactory.class);
 	}
 
 	/**
@@ -140,6 +148,51 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		this.executeTask(ti, null);
 	}
 
+	public void executeCommand(String namespace, String command, Map<String, Object> args, boolean synchronous) {
+		executeCommand(namespace, command, args, null, synchronous);
+	}
+
+	public void executeCommand(String namespace, String command, Map<String, Object> args) {
+		executeCommand(namespace, command, args, null, false);
+	}
+
+	public void executeCommand(String namespace, String command, Map<String, Object> args, TaskObserver observer,
+			boolean synchronous) {
+		List<String> commands = availableCommands.getCommands(namespace);
+		if (!commands.contains(command)) {
+			//LogUtils.warn("Command " + namespace + " " + command + " isn't available");
+			return;
+		}
+
+		if (args == null)
+			args = new HashMap<>();
+
+		if (synchronous)
+			executeSynchronousTask(ceTaskFactory.createTaskIterator(namespace, command, args, observer));
+		else
+			executeTask(ceTaskFactory.createTaskIterator(namespace, command, args, observer));
+	}
+	
+	public boolean haveNamespace(String namespace) {
+		List<String> namespaces = availableCommands.getNamespaces();
+		if (namespaces.contains(namespace)) return true;
+		return false;
+	}
+	
+	public boolean haveCommand(String namespace, String command) {
+		if (!haveNamespace(namespace)) return false;
+		List<String> commands = availableCommands.getCommands(namespace);
+		if (commands.contains(command)) return true;
+		return false;
+	}
+	
+	public void registerSearchTaskFactories() {
+		StringPGSearchTaskFactory stringSearch = new StringPGSearchTaskFactory(this);
+		Properties propsSearch = new Properties();
+		registerService(stringSearch, NetworkSearchTaskFactory.class, propsSearch);
+	}
+
+	
 	public void createBooleanColumnIfNeeded(CyTable table, Class<?> clazz, String columnName, Boolean defaultValue) {
 		if (table.getColumn(columnName) != null)
 			return;
@@ -315,6 +368,8 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 	}
 
 	public StringSpecies getDefaultSpecies() {
+		// Currently, we select Human as default
+		// TODO: change default species from human to user-defined once we have settings
 		return StringSpecies.getHumanSpecies();
 	}
 }

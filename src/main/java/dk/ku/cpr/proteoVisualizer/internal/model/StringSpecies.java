@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.cytoscape.work.FinishStatus;
+import org.cytoscape.work.ObservableTask;
+import org.cytoscape.work.TaskObserver;
+
 
 public class StringSpecies implements Comparable<StringSpecies> {
 	private Integer taxonID;
@@ -113,4 +117,47 @@ public class StringSpecies implements Comparable<StringSpecies> {
 	public String toString() {
 		return this.scientificName;
 	}
+	
+	public static void loadSpecies(final AppManager manager) {
+		LoadSpecies ls = new LoadSpecies(manager);
+		Thread t = new Thread(ls);
+		t.start();
+	}
+
+	static class LoadSpecies implements Runnable, TaskObserver {
+		final AppManager manager;
+		LoadSpecies(final AppManager manager) { 
+			this.manager = manager; 
+		}
+
+		@Override
+		public void run() {
+			while (!manager.haveCommand("string", "list species")) {
+				try {
+					Thread.sleep(500);
+				} catch (Exception e) {}
+			}
+			if (manager.haveCommand("string", "list species"))
+				manager.executeCommand("string", "list species", null, this, true);
+		}
+
+		@Override
+		public void allFinished(FinishStatus status) {			
+		}
+
+		@Override
+		public void taskFinished(ObservableTask task) {
+			if (task.getClass().getSimpleName().equals("GetSpeciesTask")) {
+				List<Map<String, String>> res = task.getResults(List.class);
+				try {
+					StringSpecies.readSpecies(res);
+				} catch (Exception e) {
+					throw new RuntimeException("Can't read species information");
+				}
+				// now that species are loaded, register the search factories 
+				manager.registerSearchTaskFactories();
+			}
+		}
+	}
 }
+

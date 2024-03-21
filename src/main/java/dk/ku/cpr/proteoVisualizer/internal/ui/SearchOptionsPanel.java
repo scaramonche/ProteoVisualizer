@@ -43,7 +43,7 @@ import dk.ku.cpr.proteoVisualizer.internal.model.SharedProperties;
 import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.StringCommandTaskFactory;
 
-public class SearchOptionsPanel extends JPanel implements TaskObserver { 
+public class SearchOptionsPanel extends JPanel { 
 	//StringNetwork stringNetwork = null;
 	//StringNetwork initialStringNetwork = null;
 	final AppManager manager;
@@ -59,7 +59,6 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 	NumberFormat intFormatter = new DecimalFormat("#0");
 	private boolean ignore = false;
 
-	private String defaultSpecies;
 	private int confidence;
 	private NetworkType networkType;
 	private List<StringSpecies> speciesList;
@@ -69,14 +68,6 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 		this.manager = manager;
 		confidence = (int)(manager.getDefaultConfidence());
 		this.networkType = manager.getDefaultNetworkType();
-		StringCommandTaskFactory factory = new StringCommandTaskFactory(this.manager,
-				SharedProperties.STRING_CMD_LIST_SPECIES, null, this);
-		TaskIterator ti = factory.createTaskIterator();
-		try {
-			this.manager.executeSynchronousTask(ti);
-		} catch (RuntimeException ex) {
-			// ignore
-		}
 		initOptions();
 		setPreferredSize(new Dimension(700,125));
 	}
@@ -84,9 +75,10 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 	private void initOptions() {
 		// Add species combobox
 		EasyGBC c = new EasyGBC();
-		speciesList = new ArrayList<StringSpecies>();
-
-		speciesList = getSpeciesList();
+		speciesList = StringSpecies.getModelSpecies();		
+		if (speciesList == null)
+			speciesList = new ArrayList<StringSpecies>();
+		
 		speciesBox = createSpeciesComboBox(speciesList);
 		add(speciesBox, c.expandHoriz().insets(5,5,0,5));
 
@@ -100,15 +92,6 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 	}
 
 	
-	List<StringSpecies> getSpeciesList() {
-		// Create the species panel
-		// Retrieve only the list of main species for now, otherwise the dialogs are very slow
-		List<StringSpecies> speciesList = StringSpecies.getModelSpecies();
-		if (speciesList == null)
-			return new ArrayList<StringSpecies>();
-		return speciesList;
-	}
-
 	JPanel createSpeciesComboBox(List<StringSpecies> speciesList) {
     // System.out.println("createSpeciesComboBox");
 		JPanel speciesPanel = new JPanel(new GridBagLayout());
@@ -117,13 +100,7 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 		c.noExpand().insets(0,5,0,5);
 		speciesPanel.add(speciesLabel, c);
 		speciesCombo = new JComboBox<StringSpecies>(speciesList.toArray(new StringSpecies[1]));
-		
-		if (defaultSpecies == null ) {
-			speciesCombo.setSelectedItem(manager.getDefaultSpecies());
-		} 
-		else {
-			speciesCombo.setSelectedItem(StringSpecies.getSpecies(defaultSpecies));
-		}
+		speciesCombo.setSelectedItem(manager.getDefaultSpecies());
 		JComboBoxDecorator decorator = new JComboBoxDecorator(speciesCombo, true, true, speciesList);
 		decorator.decorate(speciesList); 
 		c.right().expandHoriz().insets(0,5,0,5);
@@ -325,34 +302,5 @@ public class SearchOptionsPanel extends JPanel implements TaskObserver {
 	public void cancel() {
 		((Window)getRootPane().getParent()).dispose();
 	}
-
-	@Override
-	public void taskFinished(ObservableTask task) {
-		// TODO: move this code to a utility class 
-		if (task.getClass().getSimpleName().equals("GetSpeciesTask")) {
-			List<Map<String, String>> res = task.getResults(List.class);
-
-			try {
-				StringSpecies.readSpecies(res);
-				this.speciesList = StringSpecies.getModelSpecies();
-			} catch (Exception e) {
-				throw new RuntimeException("Can't read species information");
-			}
-
-			speciesCombo = new JComboBox<StringSpecies>(speciesList.toArray(new StringSpecies[1]));
-			// We select Human as default
-			speciesCombo.setSelectedItem(manager.getDefaultSpecies());
-
-			JComboBoxDecorator decorator = new JComboBoxDecorator(this.speciesCombo, true, true, speciesList);
-			decorator.decorate(speciesList);
-		}		
-	}
-
-	@Override
-	public void allFinished(FinishStatus finishStatus) {
-		// TODO Auto-generated method stub
-		
-	}
-
 
 }

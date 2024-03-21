@@ -54,7 +54,7 @@ import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.RetrieveStringNetworkTaskFactory;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.StringCommandTaskFactory;
 
-public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserver, ActionListener {
+public class RetrieveStringNetworkWindow extends AppWindow implements ActionListener {
 
 	private static final long serialVersionUID = -6267319220376028418L;
 
@@ -83,9 +83,15 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 
 		this.queryInput = new JTextArea();
 		this.netName = new JTextField();
-		
-		this.speciesList = new ArrayList<StringSpecies>();
-		this.selectSpecies = new JComboBox<StringSpecies>(speciesList.toArray(new StringSpecies[1]));
+
+		this.speciesList = StringSpecies.getModelSpecies();
+		if (speciesList == null)
+			speciesList = new ArrayList<StringSpecies>();
+		this.selectSpecies = new JComboBox<StringSpecies>(speciesList.toArray(new StringSpecies[1]));		
+		this.selectSpecies.setSelectedItem(manager.getDefaultSpecies());
+
+		JComboBoxDecorator decorator = new JComboBoxDecorator(this.selectSpecies, true, true, speciesList);
+		decorator.decorate(speciesList);
 
 		this.networkType = manager.getDefaultNetworkType();
 		if (this.networkType.equals(NetworkType.FUNCTIONAL)) {
@@ -104,11 +110,6 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 
 		this.retrieveButton = new JButton("Retrieve network");
 		this.retrieveButton.addActionListener(this);
-
-		StringCommandTaskFactory factory = new StringCommandTaskFactory(this.manager,
-				SharedProperties.STRING_CMD_LIST_SPECIES, null, this);
-		TaskIterator ti = factory.createTaskIterator();
-		this.manager.executeSynchronousTask(ti);
 
 		// Init the NumberFormat to be 0.00 (with a dot)
 		DecimalFormatSymbols dfs = new DecimalFormatSymbols();
@@ -305,35 +306,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements TaskObserv
 		// this.setLocationRelativeTo(this.manager.getOVCytoPanel().getTopLevelAncestor());
 
 	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public void taskFinished(ObservableTask task) {
-		// TODO: move this code to a utility class 
-		if (task.getClass().getSimpleName().equals("GetSpeciesTask")) {
-			List<Map<String, String>> res = task.getResults(List.class);
-
-			try {
-				StringSpecies.readSpecies(res);
-				this.speciesList = StringSpecies.getModelSpecies();
-			} catch (Exception e) {
-				throw new RuntimeException("Can't read species information");
-			}
-
-			this.selectSpecies = new JComboBox<StringSpecies>(speciesList.toArray(new StringSpecies[1]));
-			// We select Human as default
-			this.selectSpecies.setSelectedItem(manager.getDefaultSpecies());
-
-			JComboBoxDecorator decorator = new JComboBoxDecorator(this.selectSpecies, true, true, speciesList);
-			decorator.decorate(speciesList);
-		}
-	}
-
-	@Override
-	public void allFinished(FinishStatus finishStatus) {
-		// Do nothing
-	}
-
+ 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == this.retrieveButton) {
