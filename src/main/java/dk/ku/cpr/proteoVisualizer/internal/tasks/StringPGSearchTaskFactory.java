@@ -1,6 +1,5 @@
 package dk.ku.cpr.proteoVisualizer.internal.tasks;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -12,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -28,7 +28,6 @@ import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
 import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
 import dk.ku.cpr.proteoVisualizer.internal.ui.SearchOptionsPanel;
 import dk.ku.cpr.proteoVisualizer.internal.ui.SearchQueryComponent;
-import dk.ku.cpr.proteoVisualizer.internal.utils.TextIcon;
 
 public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory implements TaskObserver {
 	AppManager manager;
@@ -45,10 +44,13 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 	//private StringNetwork stringNetwork = null;
 	private SearchOptionsPanel optionsPanel = null;
 	private SearchQueryComponent queryComponent = null;
-	private final Logger logger = Logger.getLogger(CyUserLog.NAME);
+	// private final Logger logger = Logger.getLogger(CyUserLog.NAME);
 	
-	private static final Font iconFont = new Font("Monospaced", Font.PLAIN, 6);
-	private static final Icon icon = new TextIcon("ProteoVis", iconFont, Color.BLACK, 36, 36);
+	private Icon icon;
+			
+	// private static final Icon icon = new ImageIcon("src/main/reslources/logo_trial_3.png");
+	// private static final Font iconFont = new Font("Monospaced", Font.PLAIN, 6);
+	// private static final Icon icon = new TextIcon("ProteoVis", iconFont, Color.BLACK, 36, 36);	
 	// private static final Icon icon = new TextIcon(IconUtils.STRING_LAYERS, IconUtils.getIconFont(32.0f), IconUtils.STRING_COLORS, 36, 36);
 	
 	
@@ -60,9 +62,10 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 		}
 	}
 
-	public StringPGSearchTaskFactory(AppManager manager) {
+	public StringPGSearchTaskFactory(AppManager manager, Icon icon) {
 		super(STRING_ID, STRING_NAME, STRING_DESC, icon, StringPGSearchTaskFactory.stringURL());
 		this.manager = manager;
+		this.icon = icon;
 	}
 
 	public boolean isReady() { 

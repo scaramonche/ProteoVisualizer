@@ -1,5 +1,6 @@
 package dk.ku.cpr.proteoVisualizer.internal.model;
 
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -8,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import javax.swing.ImageIcon;
 
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.swing.search.NetworkSearchTaskFactory;
@@ -186,8 +189,17 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		return false;
 	}
 	
+	public ImageIcon getPVImageIcon() {
+	    return new ImageIcon(getClass().getResource("/logo_trial_3_icon.png"));
+	    //if (imageicon.getIconWidth() > 36) {
+		//	return new ImageIcon(imageicon.getImage().getScaledInstance(-1, 26, Image.SCALE_DEFAULT));
+		//} else {
+		//	return imageicon;
+		//}
+	}
+	
 	public void registerSearchTaskFactories() {
-		StringPGSearchTaskFactory stringSearch = new StringPGSearchTaskFactory(this);
+		StringPGSearchTaskFactory stringSearch = new StringPGSearchTaskFactory(this, getPVImageIcon());
 		Properties propsSearch = new Properties();
 		registerService(stringSearch, NetworkSearchTaskFactory.class, propsSearch);
 	}
