@@ -60,7 +60,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 
 	private JTextArea queryInput;
 	private JTextField netName;
-	private JTextField delimiter;
+	private JComboBox<String> delimiter;
 
 	private List<StringSpecies> speciesList;
 	private JComboBox<StringSpecies> selectSpecies;
@@ -84,7 +84,8 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 
 		this.queryInput = new JTextArea();
 		this.netName = new JTextField();
-		this.delimiter = new JTextField(SharedProperties.DEFAULT_PG_DELIMITER);
+		this.delimiter = new JComboBox<String>(SharedProperties.pg_delimiters);
+		this.delimiter.setSelectedItem(SharedProperties.DEFAULT_PG_DELIMITER);
 
 		this.speciesList = StringSpecies.getModelSpecies();
 		if (speciesList == null)
@@ -334,7 +335,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 
 			RetrieveStringNetworkTaskFactory factory = new RetrieveStringNetworkTaskFactory(this.manager);
 			try {
-				this.manager.executeTask(factory.createTaskIterator(query, delimiter.getText(), species.getTaxonID(), species.getName(),
+				this.manager.executeTask(factory.createTaskIterator(query, (String)delimiter.getSelectedItem(), species.getTaxonID(), species.getName(),
 						formatter.parse(this.confidenceValue.getText()).doubleValue(), this.getNetworkType().toString(),
 						this.netName.getText(), true));
 			} catch (ParseException e1) {

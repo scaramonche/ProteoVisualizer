@@ -57,7 +57,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 	protected String protected_query;
 	protected String protected_netName;
-	protected String protected_delim;
+	protected ListSingleSelection<String> protected_delim;
 	protected Integer protected_taxonID;
 	protected String protected_species;
 	protected double protected_cutoff;
@@ -75,7 +75,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 		this.protected_query = "";
 		this.protected_netName = "";
-		this.protected_delim = SharedProperties.DEFAULT_PG_DELIMITER;
+		this.protected_delim = new ListSingleSelection<String>(SharedProperties.pg_delimiters);
+		this.protected_delim.setSelectedValue(SharedProperties.DEFAULT_PG_DELIMITER);
 		this.protected_taxonID = 9606;
 		this.protected_species = "Homo sapiens";
 		this.protected_cutoff = (double) manager.getDefaultConfidence() / 100.0;
@@ -97,7 +98,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 	}
 
 	public void setDelimiter(String delim) {
-		this.protected_delim = delim;
+		this.protected_delim.setSelectedValue(delim);
 	}
 
 	public void setTaxonID(Integer taxonID) {
@@ -138,6 +139,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		taskMonitor.setTitle(this.getName());
 
 		taskMonitor.setStatusMessage("Query: " + this.protected_query);
+		taskMonitor.setStatusMessage("Delimiter: " + this.protected_delim.getSelectedValue());
 		taskMonitor.setStatusMessage("New network name: " + this.protected_netName);
 		taskMonitor.setStatusMessage("Taxon ID: " + this.protected_taxonID);
 		taskMonitor.setStatusMessage("Species: " + this.protected_species);
@@ -149,6 +151,11 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			return;
 		}
 
+		// TODO: figure out how to best process these delimiters
+		String delim = this.protected_delim.getSelectedValue();
+		if (delim.equals("|"))
+			delim = "\\|";
+		
 		// process list of query terms and save them somewhere?
 		String query = protected_query;
 		Set<String> queryIDs = new HashSet<String>();
@@ -170,7 +177,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		protected_protein2pgsMap = new HashMap<String, List<String>>();
 			for (String queryID : queryIDs) {
 				// let the user choose the delimiter of the proteins within a group
-				List<String> proteinIDs = Arrays.asList(queryID.split(this.protected_delim));
+				List<String> proteinIDs = Arrays.asList(queryID.split(delim));
 				protected_pg2proteinsMap.put(queryID, proteinIDs);
 				for (String protein : proteinIDs) {
 					List<String> pgs = new ArrayList<String>();

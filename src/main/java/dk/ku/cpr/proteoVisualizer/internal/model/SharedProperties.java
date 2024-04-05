@@ -43,6 +43,9 @@ public class SharedProperties {
 	public static String ATTRIBUTE_CONCAT_SYMBOL = ";";
 	public static String EDGE_TYPE_IDENTITY = "identity";
 	
+	// TODO: add delimiters that make sense
+	public static String[] pg_delimiters = new String[] {DEFAULT_PG_DELIMITER, "|"};
+	
 	// Node or edge attribute namesspaces
 	public static String STRINGDB_NAMESPACE = "stringdb";
 	public static String NAMESPACE_SEPARATOR = "::";
