@@ -13,6 +13,12 @@ public class RetrieveStringNetworkTunableTask extends RetrieveStringNetworkTask 
 					 exampleStringValue="EGFR,BRCA1,BRCA2,TP53")
 	public String query = null;
 
+	// TODO: this probably needs to be a drop down list and not just a free text...
+	@Tunable(description = "Protein group delimiter", 
+	         longDescription="Delimiter used to separate accessions in the same protein group.",
+					 exampleStringValue=";")
+	public String delimiterPG;
+
 	@Tunable(description = "New network name", 
 	         longDescription="Name for the network to be created",
 					 exampleStringValue="String Network")
@@ -39,7 +45,7 @@ public class RetrieveStringNetworkTunableTask extends RetrieveStringNetworkTask 
 			gravity=1.0)
 	public Double cutoff;
 
-	@Tunable(description="Network type.",
+	@Tunable(description="Network type to choose from.",
 			required=false,
 			tooltip="Choose one of the two network types (full STRING network or physical subnetwork) the STRING network should have. Default: full STRING network.",
 			exampleStringValue="full STRING network",
@@ -54,6 +60,9 @@ public class RetrieveStringNetworkTunableTask extends RetrieveStringNetworkTask 
 	public void run(TaskMonitor taskMonitor) throws Exception {
 		if (query != null) {
 			this.setQuery(query);
+		}
+		if (delimiterPG != null) {
+			this.setDelimiter(delimiterPG);
 		}
 		if (newNetName != null) {
 			this.setNetworkName(newNetName);

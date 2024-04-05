@@ -77,37 +77,12 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 	public TaskIterator createTaskIterator() {
 		StringSpecies species = getSpecies();
 		String query = queryComponent.getQueryText();
-		// Strip off any blank lines as well as trailing spaces
-		query = query.replaceAll("(?m)^\\s*", "");
-		query = query.replaceAll("(?m)\\s*$", "");
-		// TODO: move this to a utility class later on
-		Set<String> queryIDs = new HashSet<String>(Arrays.asList(query.split("\n")));
-		Set<String> allProteins = new HashSet<String>();
-		HashMap<String, List<String>> pg2proteins = new HashMap<String, List<String>>();
-		HashMap<String, List<String>> protein2pgs = new HashMap<String, List<String>>();
-			for (String queryID : queryIDs) {
-				// TODO: let the user choose the delimiter of the proteins within a group
-				List<String> proteinIDs = Arrays.asList(queryID.split(";"));
-				pg2proteins.put(queryID, proteinIDs);
-				for (String protein : proteinIDs) {
-					List<String> pgs = new ArrayList<String>();
-					if (protein2pgs.containsKey(protein)) {
-						pgs = protein2pgs.get(protein);
-					} 
-					pgs.add(queryID);
-					protein2pgs.put(protein, pgs);
-				}
-				allProteins.addAll(proteinIDs);
-		}
-		String proteinQueryInput = String.join(",", allProteins);
-		System.out.println(proteinQueryInput);
-		//System.out.println(pg2proteins);
-		//System.out.println(protein2pgs);
 		
 		// TODO: provide network name as part of the options?
+		// TODO: provide delimiter as part of the options
 		RetrieveStringNetworkTaskFactory factory = new RetrieveStringNetworkTaskFactory(this.manager);
-		return factory.createTaskIterator(proteinQueryInput, species.getTaxonID(), species.getName(),
-				getConfidence()/100.0, getNetworkType(), "", pg2proteins, protein2pgs, true);
+		return factory.createTaskIterator(query, ";", species.getTaxonID(), species.getName(),
+				getConfidence()/100.0, getNetworkType(), "", true);
 	}
 
 	@Override

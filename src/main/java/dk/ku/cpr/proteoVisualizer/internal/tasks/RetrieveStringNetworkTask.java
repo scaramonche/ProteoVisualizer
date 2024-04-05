@@ -57,6 +57,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 	protected String protected_query;
 	protected String protected_netName;
+	protected String protected_delim;
 	protected Integer protected_taxonID;
 	protected String protected_species;
 	protected double protected_cutoff;
@@ -74,9 +75,10 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 		this.protected_query = "";
 		this.protected_netName = "";
-		this.protected_taxonID = null;
-		this.protected_species = null;
-		this.protected_cutoff = 0.4;
+		this.protected_delim = SharedProperties.DEFAULT_PG_DELIMITER;
+		this.protected_taxonID = 9606;
+		this.protected_species = "Homo sapiens";
+		this.protected_cutoff = (double) manager.getDefaultConfidence() / 100.0;
 		this.protected_netType = new ListSingleSelection<String>(
 				Arrays.asList(NetworkType.FUNCTIONAL.toString(), NetworkType.PHYSICAL.toString()));
 		this.protected_netType.setSelectedValue(NetworkType.FUNCTIONAL.toString());
@@ -92,6 +94,10 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 	public void setNetworkName(String name) {
 		this.protected_netName = name;
+	}
+
+	public void setDelimiter(String delim) {
+		this.protected_delim = delim;
 	}
 
 	public void setTaxonID(Integer taxonID) {
@@ -143,6 +149,44 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			return;
 		}
 
+		// process list of query terms and save them somewhere?
+		String query = protected_query;
+		Set<String> queryIDs = new HashSet<String>();
+		
+		//System.out.println("query initial: " + query);
+		//System.out.println("is gui: " + isGUI);
+		// Strip off any blank lines as well as trailing spaces
+		if (isGUI) {
+			queryIDs = new HashSet<String>(Arrays.asList(query.split("\n")));
+		} else {
+			query = query.replaceAll("(?m)^\\s*", "");
+			query = query.replaceAll("(?m)\\s*$", "");
+			queryIDs = new HashSet<String>(Arrays.asList(query.split(",")));
+		}
+		//System.out.println("query ids: " + queryIDs);
+		//System.out.println("delim: " + this.protected_delim);
+		Set<String> allProteins = new HashSet<String>();
+		protected_pg2proteinsMap = new HashMap<String, List<String>>();
+		protected_protein2pgsMap = new HashMap<String, List<String>>();
+			for (String queryID : queryIDs) {
+				// let the user choose the delimiter of the proteins within a group
+				List<String> proteinIDs = Arrays.asList(queryID.split(this.protected_delim));
+				protected_pg2proteinsMap.put(queryID, proteinIDs);
+				for (String protein : proteinIDs) {
+					List<String> pgs = new ArrayList<String>();
+					if (protected_protein2pgsMap.containsKey(protein)) {
+						pgs = protected_protein2pgsMap.get(protein);
+					} 
+					pgs.add(queryID);
+					protected_protein2pgsMap.put(protein, pgs);
+				}
+				allProteins.addAll(proteinIDs);
+		}
+		this.protected_query = String.join(",", allProteins);
+		//System.out.println("query formatted: " + this.protected_query);
+		//System.out.println(protected_pg2proteinsMap);
+		//System.out.println(protected_protein2pgsMap);		
+		
 		// We set the arguments for the STRING command
 		Map<String, Object> args = new HashMap<>();
 		args.put("query", this.protected_query);

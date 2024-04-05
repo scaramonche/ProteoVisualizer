@@ -66,7 +66,7 @@ public class SearchOptionsPanel extends JPanel {
 	public SearchOptionsPanel(final AppManager manager) {
 		super(new GridBagLayout());
 		this.manager = manager;
-		confidence = (int)(manager.getDefaultConfidence());
+		confidence = manager.getDefaultConfidence();
 		this.networkType = manager.getDefaultNetworkType();
 		initOptions();
 		setPreferredSize(new Dimension(700,125));

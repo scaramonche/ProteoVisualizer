@@ -37,6 +37,7 @@ public class SharedProperties {
 	public static final int defaultConfidence = 70;
 	
 	// App specific terms
+	public static String DEFAULT_PG_DELIMITER = ";";
 	public static String NODE_TYPE_PG = "protein group";
 	public static String STYLE_STRING_EMPTY = "string:";
 	public static String ATTRIBUTE_CONCAT_SYMBOL = ";";

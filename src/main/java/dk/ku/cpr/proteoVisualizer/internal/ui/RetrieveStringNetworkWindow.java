@@ -60,6 +60,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 
 	private JTextArea queryInput;
 	private JTextField netName;
+	private JTextField delimiter;
 
 	private List<StringSpecies> speciesList;
 	private JComboBox<StringSpecies> selectSpecies;
@@ -83,6 +84,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 
 		this.queryInput = new JTextArea();
 		this.netName = new JTextField();
+		this.delimiter = new JTextField(SharedProperties.DEFAULT_PG_DELIMITER);
 
 		this.speciesList = StringSpecies.getModelSpecies();
 		if (speciesList == null)
@@ -168,7 +170,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 			}
 			confidenceSlider.setLabelTable(labels);
 			confidenceSlider.setPaintLabels(true);
-			confidenceSlider.setValue(SharedProperties.defaultConfidence);
+			confidenceSlider.setValue(manager.getDefaultConfidence());
 
 			confidenceSlider.addChangeListener(new ChangeListener() {
 				@Override
@@ -189,7 +191,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 			confidenceValue = new JTextField(4);
 			confidenceValue.setHorizontalAlignment(JTextField.RIGHT);
 			confidenceValue
-					.setText(this.formatter.format(((double) SharedProperties.defaultConfidence) / 100.0));
+					.setText(this.formatter.format(((double) manager.getDefaultConfidence()) / 100.0));
 			c.nextCol().noExpand().setAnchor("C");// .setInsets(0,5,0,5);
 			confidencePanel.add(confidenceValue, c);
 
@@ -252,7 +254,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 	@Override
 	public void setVisible(boolean b) {
 		if (b) {
-			this.confidenceSlider.setValue(SharedProperties.defaultConfidence);
+			this.confidenceSlider.setValue(manager.getDefaultConfidence());
 			init();
 		}
 
@@ -277,6 +279,9 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 		selectPanel.add(jsp, c.nextCol());
 		
 		c.expandHorizontal();
+		selectPanel.add(new JLabel("Protein group delimiter:"), c.nextRow());
+		selectPanel.add(this.delimiter, c.nextCol());
+
 		selectPanel.add(new JLabel("Network name:"), c.nextRow());
 		selectPanel.add(this.netName, c.nextCol());
 
@@ -323,40 +328,15 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 				return;
 			}
 
-			// TODO: process list of query terms and save them somewhere?
 			String query = queryInput.getText();
-			// Strip off any blank lines as well as trailing spaces
 			query = query.replaceAll("(?m)^\\s*", "");
 			query = query.replaceAll("(?m)\\s*$", "");
-			// TODO: move this to a utility class later on
-			Set<String> queryIDs = new HashSet<String>(Arrays.asList(query.split("\n")));
-			Set<String> allProteins = new HashSet<String>();
-			HashMap<String, List<String>> pg2proteins = new HashMap<String, List<String>>();
-			HashMap<String, List<String>> protein2pgs = new HashMap<String, List<String>>();
- 			for (String queryID : queryIDs) {
- 				// TODO: let the user choose the delimiter of the proteins within a group
- 				List<String> proteinIDs = Arrays.asList(queryID.split(";"));
- 				pg2proteins.put(queryID, proteinIDs);
- 				for (String protein : proteinIDs) {
- 					List<String> pgs = new ArrayList<String>();
- 					if (protein2pgs.containsKey(protein)) {
- 						pgs = protein2pgs.get(protein);
- 					} 
- 					pgs.add(queryID);
- 					protein2pgs.put(protein, pgs);
- 				}
- 				allProteins.addAll(proteinIDs);
-			}
-			String proteinQueryInput = String.join(",", allProteins);
-			System.out.println(proteinQueryInput);
-			//System.out.println(pg2proteins);
-			//System.out.println(protein2pgs);
-			
+
 			RetrieveStringNetworkTaskFactory factory = new RetrieveStringNetworkTaskFactory(this.manager);
 			try {
-				this.manager.executeTask(factory.createTaskIterator(proteinQueryInput, species.getTaxonID(), species.getName(),
+				this.manager.executeTask(factory.createTaskIterator(query, delimiter.getText(), species.getTaxonID(), species.getName(),
 						formatter.parse(this.confidenceValue.getText()).doubleValue(), this.getNetworkType().toString(),
-						this.netName.getText(), pg2proteins, protein2pgs, true));
+						this.netName.getText(), true));
 			} catch (ParseException e1) {
 				inputError();
 				return;
