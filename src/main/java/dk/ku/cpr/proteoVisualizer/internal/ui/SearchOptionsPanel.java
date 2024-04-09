@@ -15,11 +15,11 @@ import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -32,16 +32,10 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.cytoscape.work.FinishStatus;
-import org.cytoscape.work.ObservableTask;
-import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskObserver;
-
 import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
 import dk.ku.cpr.proteoVisualizer.internal.model.NetworkType;
 import dk.ku.cpr.proteoVisualizer.internal.model.SharedProperties;
 import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
-import dk.ku.cpr.proteoVisualizer.internal.tasks.StringCommandTaskFactory;
 
 public class SearchOptionsPanel extends JPanel { 
 	//StringNetwork stringNetwork = null;
@@ -55,6 +49,10 @@ public class SearchOptionsPanel extends JPanel {
 	JRadioButton physicalNetwork;
 	JRadioButton functionalNetwork;
 	JPanel advancedOptions;
+	private JTextField netName;
+	private JComboBox<String> delimiter;
+	private JCheckBox keepCollapsed;
+	
 	NumberFormat formatter = new DecimalFormat("#0.00");
 	NumberFormat intFormatter = new DecimalFormat("#0");
 	private boolean ignore = false;
@@ -69,7 +67,7 @@ public class SearchOptionsPanel extends JPanel {
 		confidence = manager.getDefaultConfidence();
 		this.networkType = manager.getDefaultNetworkType();
 		initOptions();
-		setPreferredSize(new Dimension(700,125));
+		setPreferredSize(new Dimension(700,200));
 	}
 
 	private void initOptions() {
@@ -89,6 +87,10 @@ public class SearchOptionsPanel extends JPanel {
 		// Create the slider for the confidence cutoff
 		JPanel confidenceSlider = createConfidenceSlider();
 		add(confidenceSlider, c.down().expandBoth().insets(5,5,0,5));
+		
+		// Add some "advanced" options
+		advancedOptions = createAdvancedOptions();
+		add(advancedOptions, c.down().expandBoth().insets(5,5,0,5));
 	}
 
 	
@@ -109,21 +111,21 @@ public class SearchOptionsPanel extends JPanel {
 	}
 
 	public StringSpecies getSpecies() throws RuntimeException {
-    Object sp = speciesCombo.getSelectedItem();
-    if (sp instanceof StringSpecies)
-      return (StringSpecies)sp;
+		Object sp = speciesCombo.getSelectedItem();
+		if (sp instanceof StringSpecies)
+			return (StringSpecies) sp;
 
-    // OK, we haven't gotten a real species, so let's see if we can convert it
-    String spText = sp.toString();
-    if (spText.length() == 0)
-      return null;
+		// OK, we haven't gotten a real species, so let's see if we can convert it
+		String spText = sp.toString();
+		if (spText.length() == 0)
+			return null;
 
-    // See if we know about this species
-    StringSpecies species = StringSpecies.getSpecies(spText);
-    if (species == null) {
-      throw new RuntimeException("No such species");
-    }
-    return species;
+		// See if we know about this species
+		StringSpecies species = StringSpecies.getSpecies(spText);
+		if (species == null) {
+			throw new RuntimeException("No such species");
+		}
+		return species;
 	}
 
 	public String getSpeciesText() {
@@ -286,6 +288,69 @@ public class SearchOptionsPanel extends JPanel {
 		ignore = false;
 	}
 
+	JPanel createAdvancedOptions() {
+		JPanel advancedPanel = new JPanel(new GridBagLayout());
+		advancedPanel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
+		EasyGBC c = new EasyGBC();
+		
+		JLabel optionsLabel = new JLabel("<html><b>Options:</b></html>");
+		c.anchor("west").insets(0,5,0,5);
+		advancedPanel.add(optionsLabel, c);
+		
+		c.right().noExpand().insets(0,10,0,5);		
+		keepCollapsed = new JCheckBox("Collapse groups", true);
+		keepCollapsed.setToolTipText("");
+		advancedPanel.add(keepCollapsed, c);
+
+		c.right().noExpand().insets(0,10,0,1);
+		JLabel delimiterLabel = new JLabel("Delimiter:");
+		advancedPanel.add(delimiterLabel, c);
+
+		c.right().noExpand().insets(0,1,0,5);
+		delimiter = new JComboBox<String>(SharedProperties.pg_delimiters);
+		delimiter.setSelectedItem(SharedProperties.DEFAULT_PG_DELIMITER);
+		advancedPanel.add(delimiter, c);
+
+		c.right().noExpand().insets(0,10,0,1);
+		JLabel netNameLabel = new JLabel("Network Name:");
+		advancedPanel.add(netNameLabel, c);
+
+		c.right().expandHoriz().insets(0,1,0,5);
+		netName = new JTextField();
+		advancedPanel.add(netName, c);
+
+		// if we add an option to create or not a network view
+		//c.right().expandHoriz().insets(0,10,0,5);
+		//createNetView = new JCheckBox("Create network view", true);
+		//advancedPanel.add(createNetView, c);
+		
+		return advancedPanel;
+	}
+
+	public boolean getKeepCollapsed() {
+		return keepCollapsed.isSelected();
+	}
+
+	public void setKeepCollapsed(boolean selected) {
+		keepCollapsed.setSelected(selected);
+	}
+
+	public String getDelimiter() {
+		return (String)delimiter.getSelectedItem();
+	}
+
+	public void setDelimiter(String delim) {
+		delimiter.setSelectedItem(delim);
+	}
+
+	public String getNetworkName() {
+		return netName.getText();
+	}
+
+	public void setNetworkName(String name) {
+		netName.setText(name);
+	}	
+	
 	private double inputError() {
 		confidenceValue.setBackground(Color.RED);
 		JOptionPane.showMessageDialog(null, 

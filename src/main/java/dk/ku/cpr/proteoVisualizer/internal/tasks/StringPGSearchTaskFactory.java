@@ -33,7 +33,7 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 	AppManager manager;
 	static String STRING_ID = "dk.ku.cpr.pg.string";
 	static String STRING_URL = "http://string-db.org";
-	static String STRING_NAME = "STRING: protein groups query";
+	static String STRING_NAME = "Proteo Visualizer: STRING query";
 	static String STRING_DESC = "Search STRING for protein-protein interactions";
 	static String STRING_DESC_LONG = "<html>The protein query retrieves a STRING network for one or more proteins. <br />"
 										+ "STRING is a database of known and predicted protein interactions for <br />"
@@ -78,12 +78,9 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 		StringSpecies species = getSpecies();
 		String query = queryComponent.getQueryText();
 		
-		// TODO: provide network name as part of the options?
-		// TODO: provide delimiter as part of the options
-		// TODO: provide keepCollapsed as part of the options
 		RetrieveStringNetworkTaskFactory factory = new RetrieveStringNetworkTaskFactory(this.manager);
-		return factory.createTaskIterator(query, ";", true, species.getTaxonID(), species.getName(),
-				getConfidence()/100.0, getNetworkType(), "", true);
+		return factory.createTaskIterator(query, getDelimiter(), getCollapse(), species.getTaxonID(), species.getName(),
+				getConfidence()/100.0, getNetworkType(), getNetworkName(), true);
 	}
 
 	@Override
@@ -151,13 +148,23 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 	}
 
 	public int getConfidence() {
-		// This will eventually come from the OptionsComponent...
 		return optionsPanel.getConfidence();
 	}
 
 	public String getNetworkType() {
-		// This will eventually come from the OptionsComponent...
 		return optionsPanel.getNetworkType().toString();
+	}
+
+	public String getDelimiter() {
+		return optionsPanel.getDelimiter();
+	}
+
+	public String getNetworkName() {
+		return optionsPanel.getNetworkName();
+	}
+
+	public boolean getCollapse() {
+		return optionsPanel.getKeepCollapsed();
 	}
 
 	@Override
