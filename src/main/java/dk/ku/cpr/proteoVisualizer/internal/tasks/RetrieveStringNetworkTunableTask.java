@@ -1,10 +1,14 @@
 package dk.ku.cpr.proteoVisualizer.internal.tasks;
 
+import java.util.Arrays;
+
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 import org.cytoscape.work.util.ListSingleSelection;
 
 import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
+import dk.ku.cpr.proteoVisualizer.internal.model.NetworkType;
+import dk.ku.cpr.proteoVisualizer.internal.model.SharedProperties;
 
 public class RetrieveStringNetworkTunableTask extends RetrieveStringNetworkTask {
 
@@ -55,6 +59,11 @@ public class RetrieveStringNetworkTunableTask extends RetrieveStringNetworkTask 
 
 	public RetrieveStringNetworkTunableTask(AppManager manager) {
 		super(manager);
+		delimiterPG = new ListSingleSelection<String>(SharedProperties.pg_delimiters);
+		delimiterPG.setSelectedValue(SharedProperties.DEFAULT_PG_DELIMITER);
+		netType = new ListSingleSelection<String>(
+				Arrays.asList(NetworkType.FUNCTIONAL.toString(), NetworkType.PHYSICAL.toString()));
+		netType.setSelectedValue(NetworkType.FUNCTIONAL.toString());
 	}
 
 	@Override
@@ -68,16 +77,16 @@ public class RetrieveStringNetworkTunableTask extends RetrieveStringNetworkTask 
 		if (newNetName != null) {
 			this.setNetworkName(newNetName);
 		}
-		if(taxonID != null) {
+		if (taxonID != null) {
 			this.setTaxonID(taxonID);
 		}
-		if(species != null) {
+		if (species != null) {
 			this.setSpecies(species);
 		}
-		if(cutoff != null) {
+		if (cutoff != null) {
 			this.setCutoff(cutoff.doubleValue());
 		}
-		if(netType != null) {
+		if (netType != null) {
 			this.setNetType(netType.getSelectedValue());
 		}
 		

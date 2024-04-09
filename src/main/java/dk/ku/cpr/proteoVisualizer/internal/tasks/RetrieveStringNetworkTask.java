@@ -57,11 +57,11 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 	protected String protected_query;
 	protected String protected_netName;
-	protected ListSingleSelection<String> protected_delim;
+	protected String protected_delim;
 	protected Integer protected_taxonID;
 	protected String protected_species;
 	protected double protected_cutoff;
-	protected ListSingleSelection<String> protected_netType;
+	protected String protected_netType;
 	protected HashMap<String, List<String>> protected_pg2proteinsMap;
 	protected HashMap<String, List<String>> protected_protein2pgsMap;
 
@@ -75,14 +75,11 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 		this.protected_query = "";
 		this.protected_netName = "";
-		this.protected_delim = new ListSingleSelection<String>(SharedProperties.pg_delimiters);
-		this.protected_delim.setSelectedValue(SharedProperties.DEFAULT_PG_DELIMITER);
+		this.protected_delim = SharedProperties.DEFAULT_PG_DELIMITER;
 		this.protected_taxonID = 9606;
 		this.protected_species = "Homo sapiens";
 		this.protected_cutoff = (double) manager.getDefaultConfidence() / 100.0;
-		this.protected_netType = new ListSingleSelection<String>(
-				Arrays.asList(NetworkType.FUNCTIONAL.toString(), NetworkType.PHYSICAL.toString()));
-		this.protected_netType.setSelectedValue(NetworkType.FUNCTIONAL.toString());
+		this.protected_netType = NetworkType.FUNCTIONAL.toString();
 		this.protected_pg2proteinsMap = null;
 		this.protected_protein2pgsMap = null;
 
@@ -98,7 +95,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 	}
 
 	public void setDelimiter(String delim) {
-		this.protected_delim.setSelectedValue(delim);
+		this.protected_delim = delim;
 	}
 
 	public void setTaxonID(Integer taxonID) {
@@ -114,7 +111,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 	}
 
 	public void setNetType(String netType) {
-		this.protected_netType.setSelectedValue(netType);
+		this.protected_netType = netType;
 	}
 
 	public void setIsGUI(boolean isGUI) {
@@ -139,12 +136,12 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		taskMonitor.setTitle(this.getName());
 
 		taskMonitor.setStatusMessage("Query: " + this.protected_query);
-		taskMonitor.setStatusMessage("Delimiter: " + this.protected_delim.getSelectedValue());
+		taskMonitor.setStatusMessage("Delimiter: " + this.protected_delim);
 		taskMonitor.setStatusMessage("New network name: " + this.protected_netName);
 		taskMonitor.setStatusMessage("Taxon ID: " + this.protected_taxonID);
 		taskMonitor.setStatusMessage("Species: " + this.protected_species);
 		taskMonitor.setStatusMessage("Cut-off: " + this.protected_cutoff);
-		taskMonitor.setStatusMessage("Network type: " + this.protected_netType.getSelectedValue());
+		taskMonitor.setStatusMessage("Network type: " + this.protected_netType);
 
 		if ((this.protected_taxonID == null) && (this.protected_species == null)) {
 			taskMonitor.setStatusMessage("You have to give either the Taxon ID or the Species name.");
@@ -152,7 +149,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		}
 
 		// TODO: figure out how to best process these delimiters
-		String delim = this.protected_delim.getSelectedValue();
+		String delim = this.protected_delim;
 		if (delim.equals("|"))
 			delim = "\\|";
 		
@@ -160,8 +157,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		String query = protected_query;
 		Set<String> queryIDs = new HashSet<String>();
 		
-		//System.out.println("query initial: " + query);
-		//System.out.println("is gui: " + isGUI);
+		System.out.println("query initial: " + query);
+		System.out.println("is gui: " + isGUI);
 		// Strip off any blank lines as well as trailing spaces
 		if (isGUI) {
 			queryIDs = new HashSet<String>(Arrays.asList(query.split("\n")));
@@ -177,15 +174,19 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		protected_protein2pgsMap = new HashMap<String, List<String>>();
 			for (String queryID : queryIDs) {
 				// let the user choose the delimiter of the proteins within a group
-				List<String> proteinIDs = Arrays.asList(queryID.split(delim));
-				protected_pg2proteinsMap.put(queryID, proteinIDs);
-				for (String protein : proteinIDs) {
+				List<String> proteinIDsTemp = Arrays.asList(queryID.split(delim));
+				List<String> proteinIDs = new ArrayList<String>();
+				for (String protein : proteinIDsTemp) {
+					// this is needed in case the IDs are separated by "; " instead of just semicolon
+					protein = protein.strip();
+					proteinIDs.add(protein);
 					List<String> pgs = new ArrayList<String>();
 					if (protected_protein2pgsMap.containsKey(protein)) {
 						pgs = protected_protein2pgsMap.get(protein);
 					} 
 					pgs.add(queryID);
 					protected_protein2pgsMap.put(protein, pgs);
+					protected_pg2proteinsMap.put(queryID, proteinIDs);
 				}
 				allProteins.addAll(proteinIDs);
 		}
@@ -204,7 +205,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			args.put("species", this.protected_species);
 		}
 		args.put("cutoff", String.valueOf(this.protected_cutoff));
-		args.put("networkType", protected_netType.getSelectedValue());
+		args.put("networkType", protected_netType);
 		args.put("limit", "0");
 		args.put("newNetName", this.protected_netName);
 
@@ -268,6 +269,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// add needed new columns
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 				SharedProperties.USE_ENRICHMENT, false);
+		manager.createStringColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), String.class,
+				SharedProperties.PROTEINGROUP, "");
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
 				SharedProperties.EDGEAGGREGATED, false);
 		//manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
@@ -350,15 +353,17 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 						reprNode = proteinNode;
 					} 
 					// add to list with group nodes and count up
-					nodesForGroup.add(proteinNode);							
+					nodesForGroup.add(proteinNode);
+					retrievedNetwork.getRow(proteinNode).set(SharedProperties.PROTEINGROUP, pg);
 					proteinCount += 1;
 				}
 			}
 			// if group only had one protein, set this node to be used for enrichment and go to the next protein group
 			if (nodesForGroup.size() <= 1) {
 				// set the use for enrichment flag if there is at least one protein
-				if (reprNode != null)
+				if (reprNode != null) {
 					retrievedNetwork.getRow(reprNode).set(SharedProperties.USE_ENRICHMENT, true);
+				}
 				// continue with the next protein group
 				continue;
 			}
@@ -370,6 +375,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			// Node attributes that are group-specific
 			// set protein group query term to be the PD name such that import of data works properly
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
+			retrievedNetwork.getRow(groupNode).set(SharedProperties.PROTEINGROUP, pg);
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, SharedProperties.NODE_TYPE_PG);				
 			// set group node to be used for enrichment with the string ID of the repr node
 			// TODO: USE_ENRICHMENT might change eventually but ok like this for now

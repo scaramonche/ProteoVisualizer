@@ -44,9 +44,10 @@ public class SharedProperties {
 	public static String EDGE_TYPE_IDENTITY = "identity";
 	
 	// TODO: add delimiters that make sense
-	public static String[] pg_delimiters = new String[] {DEFAULT_PG_DELIMITER, "|"};
+	public static String[] pg_delimiters = new String[] {DEFAULT_PG_DELIMITER, "|", ","};
 	
 	// Node or edge attribute namesspaces
+	public static String PROTEOVIS_NAMESPACE = "proteovis";
 	public static String STRINGDB_NAMESPACE = "stringdb";
 	public static String NAMESPACE_SEPARATOR = "::";
 	public static String TISSUE_NAMESPACE = "tissue";
@@ -55,15 +56,15 @@ public class SharedProperties {
 	
 	// Node information for proteins
 	public static String CANONICAL = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "canonical name";
-	public static String DISPLAY = "display name";
-	public static String FULLNAME = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "full name";
-	public static String ELABEL_STYLE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "enhancedLabel Passthrough";
-	public static String ID = "@id";
 	public static String DESCRIPTION = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "description";
-	public static String USE_ENRICHMENT = "use for enrichment";
+	public static String DISPLAY = "display name";
+	public static String ELABEL_STYLE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "enhancedLabel Passthrough";
+	public static String FULLNAME = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "full name";
+	public static String ID = "@id";
 	public static String IMAGE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "imageurl";
 	public static String INTERACTORSCORE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "interactor score";
 	public static String NAMESPACE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "namespace";
+	public static String PROTEINGROUP = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "protein group";
 	public static String QUERYTERM = "query term";
 	public static String SEQUENCE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "sequence";
 	public static String SPECIES = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "species";
@@ -71,6 +72,7 @@ public class SharedProperties {
 	public static String STRINGID = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "database identifier";
 	public static String STYLE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "STRING style";
 	public static String TYPE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "node type";
+	public static String USE_ENRICHMENT = "use for enrichment";
 
 	// attributes from Pharos
 	public static String DEVLEVEL = TARGET_NAMESPACE + NAMESPACE_SEPARATOR + "development level";

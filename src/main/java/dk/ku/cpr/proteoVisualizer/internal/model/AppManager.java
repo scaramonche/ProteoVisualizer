@@ -226,6 +226,13 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		table.createColumn(columnName, clazz, false, defaultValue);
 	}
 
+	public void createStringColumnIfNeeded(CyTable table, Class<?> clazz, String columnName, String defaultValue) {
+		if (table.getColumn(columnName) != null)
+			return;
+
+		table.createColumn(columnName, clazz, false, defaultValue);
+	}
+
 	public void createListColumnIfNeeded(CyTable table, Class<?> clazz, String columnName) {
 		if (table.getColumn(columnName) != null)
 			return;
