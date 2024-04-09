@@ -58,6 +58,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 	protected String protected_query;
 	protected String protected_netName;
 	protected String protected_delim;
+	protected boolean protected_collapsed;
 	protected Integer protected_taxonID;
 	protected String protected_species;
 	protected double protected_cutoff;
@@ -76,6 +77,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		this.protected_query = "";
 		this.protected_netName = "";
 		this.protected_delim = SharedProperties.DEFAULT_PG_DELIMITER;
+		this.protected_collapsed = true;
 		this.protected_taxonID = 9606;
 		this.protected_species = "Homo sapiens";
 		this.protected_cutoff = (double) manager.getDefaultConfidence() / 100.0;
@@ -96,6 +98,10 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 	public void setDelimiter(String delim) {
 		this.protected_delim = delim;
+	}
+
+	public void setCollapsed(boolean collapse) {
+		this.protected_collapsed = collapse;
 	}
 
 	public void setTaxonID(Integer taxonID) {
@@ -378,10 +384,13 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.PROTEINGROUP, pg);
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, SharedProperties.NODE_TYPE_PG);				
 			// set group node to be used for enrichment with the string ID of the repr node
-			// TODO: USE_ENRICHMENT might change eventually but ok like this for now
+			// USE_ENRICHMENT might change eventually but ok like this for now
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.USE_ENRICHMENT, Boolean.valueOf(true));
-			// style is getting fixed when we collapse/uncollapse
-			retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, SharedProperties.STYLE_STRING_EMPTY);
+			// style depends on the collapse/uncollapse state and is also handled by AppManager on (un)collapse events
+			if (this.protected_collapsed)
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, SharedProperties.STYLE_STRING_EMPTY);
+			else 
+				retrievedNetwork.getRow(groupNode).set(SharedProperties.STYLE, "");
 			
 			// Node attributes that are copied from the representative node
 			// name, database identifier (STRINGID), @id, namespace, species, enhanced label
@@ -448,13 +457,15 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 
 		// TODO: decide how to handle networks with confidence 1.0, that might contain only identity edges!
 		
-		// collapse all the groups
+		// collapse all the groups if the user selected this option
 		// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
-		for (CyGroup group : groups) {
-			// System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
-			group.collapse(retrievedNetwork);				
+		if (this.protected_collapsed) {
+			for (CyGroup group : groups) {
+				// System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
+				group.collapse(retrievedNetwork);				
+			}
 		}
-					
+		
 		// retrieve the stringdb namespace columns
 		Collection<CyColumn> stringdbCols = retrievedNetwork.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
 		List<String> edgeColsToAggregate = new ArrayList<String>();
@@ -489,7 +500,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			}
 		}
 		
-		// redo layout and set visual properties!
+		// set visual properties!
 		VisualMappingManager vmm = manager.getService(VisualMappingManager.class);
 		VisualStyle currentVS = vmm.getCurrentVisualStyle();
 		
@@ -503,7 +514,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		dMapping.putMapValue(SharedProperties.NODE_TYPE_PG, 50);
 		currentVS.addVisualMappingFunction(dMapping);
 		
-		// TODO: add visual mapping for edge lines
+		// add visual mapping for edge lines
 		VisualMappingFunctionFactory continuousFactory = manager.getService(VisualMappingFunctionFactory.class,
 				"(mapping.type=continuous)");
 		ContinuousMapping<Double, LineType> cMapping = (ContinuousMapping) continuousFactory
@@ -511,20 +522,20 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		cMapping.addPoint(this.protected_cutoff, new BoundaryRangeValues<LineType>(LineTypeVisualProperty.EQUAL_DASH,
 				LineTypeVisualProperty.SOLID, LineTypeVisualProperty.SOLID));
 		currentVS.addVisualMappingFunction(cMapping);
-
 		
-		// lay out network after collapsing groups 
-		CyNetworkView networkView = manager.getCurrentNetworkView();
-		if (networkView != null && networkView.getModel().equals(retrievedNetwork)) {
-			CyLayoutAlgorithm alg = manager.getService(CyLayoutAlgorithmManager.class).getLayout("force-directed");
-			Object context = alg.createLayoutContext();
-			TunableSetter setter = manager.getService(TunableSetter.class);
-			Map<String, Object> layoutArgs = new HashMap<>();
-			layoutArgs.put("defaultNodeMass", 10.0);
-			setter.applyTunables(context, layoutArgs);
-			Set<View<CyNode>> nodeViews = new HashSet<>(networkView.getNodeViews());
-			insertTasksAfterCurrentTask(alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
-		}
+		// lay out network after collapsing groups
+		// TODO: do layout if we can figure out how to position the nodes in the group when uncollapsing
+//		CyNetworkView networkView = manager.getCurrentNetworkView();
+//		if (networkView != null && networkView.getModel().equals(retrievedNetwork)) {
+//			CyLayoutAlgorithm alg = manager.getService(CyLayoutAlgorithmManager.class).getLayout("force-directed");
+//			Object context = alg.createLayoutContext();
+//			TunableSetter setter = manager.getService(TunableSetter.class);
+//			Map<String, Object> layoutArgs = new HashMap<>();
+//			layoutArgs.put("defaultNodeMass", 10.0);
+//			setter.applyTunables(context, layoutArgs);
+//			Set<View<CyNode>> nodeViews = new HashSet<>(networkView.getNodeViews());
+//			insertTasksAfterCurrentTask(alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
+//		}
 	}
 
 	@Override

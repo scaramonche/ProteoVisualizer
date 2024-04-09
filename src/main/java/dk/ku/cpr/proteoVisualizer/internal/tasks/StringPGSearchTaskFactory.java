@@ -80,8 +80,9 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 		
 		// TODO: provide network name as part of the options?
 		// TODO: provide delimiter as part of the options
+		// TODO: provide keepCollapsed as part of the options
 		RetrieveStringNetworkTaskFactory factory = new RetrieveStringNetworkTaskFactory(this.manager);
-		return factory.createTaskIterator(query, ";", species.getTaxonID(), species.getName(),
+		return factory.createTaskIterator(query, ";", true, species.getTaxonID(), species.getName(),
 				getConfidence()/100.0, getNetworkType(), "", true);
 	}
 

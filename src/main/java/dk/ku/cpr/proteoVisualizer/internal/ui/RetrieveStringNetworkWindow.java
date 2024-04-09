@@ -28,6 +28,7 @@ import java.util.Set;
 import javax.swing.AbstractAction;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -42,17 +43,12 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.cytoscape.util.swing.LookAndFeelUtil;
-import org.cytoscape.work.FinishStatus;
-import org.cytoscape.work.ObservableTask;
-import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskObserver;
 
 import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
 import dk.ku.cpr.proteoVisualizer.internal.model.NetworkType;
 import dk.ku.cpr.proteoVisualizer.internal.model.SharedProperties;
 import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.RetrieveStringNetworkTaskFactory;
-import dk.ku.cpr.proteoVisualizer.internal.tasks.StringCommandTaskFactory;
 
 public class RetrieveStringNetworkWindow extends AppWindow implements ActionListener {
 
@@ -61,7 +57,8 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 	private JTextArea queryInput;
 	private JTextField netName;
 	private JComboBox<String> delimiter;
-
+	private JCheckBox keepCollapsed;
+	
 	private List<StringSpecies> speciesList;
 	private JComboBox<StringSpecies> selectSpecies;
 
@@ -74,8 +71,6 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 	private boolean ignore = false;
 	NumberFormat formatter;
 
-	// TODO: add option for the user to choose if they want the collapsed or non-collapsed group
-	
 	private JButton closeButton;
 	private JButton retrieveButton;
 
@@ -86,7 +81,9 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 		this.netName = new JTextField();
 		this.delimiter = new JComboBox<String>(SharedProperties.pg_delimiters);
 		this.delimiter.setSelectedItem(SharedProperties.DEFAULT_PG_DELIMITER);
-
+		this.keepCollapsed = new JCheckBox();
+		this.keepCollapsed.setSelected(true);
+		
 		this.speciesList = StringSpecies.getModelSpecies();
 		if (speciesList == null)
 			speciesList = new ArrayList<StringSpecies>();
@@ -283,6 +280,9 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 		selectPanel.add(new JLabel("Protein group delimiter:"), c.nextRow());
 		selectPanel.add(this.delimiter, c.nextCol());
 
+		selectPanel.add(new JLabel("Collapse groups:"), c.nextRow());
+		selectPanel.add(this.keepCollapsed, c.nextCol());
+
 		selectPanel.add(new JLabel("Network name:"), c.nextRow());
 		selectPanel.add(this.netName, c.nextCol());
 
@@ -335,7 +335,7 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 
 			RetrieveStringNetworkTaskFactory factory = new RetrieveStringNetworkTaskFactory(this.manager);
 			try {
-				this.manager.executeTask(factory.createTaskIterator(query, (String)delimiter.getSelectedItem(), species.getTaxonID(), species.getName(),
+				this.manager.executeTask(factory.createTaskIterator(query, (String)delimiter.getSelectedItem(), keepCollapsed.isSelected(), species.getTaxonID(), species.getName(),
 						formatter.parse(this.confidenceValue.getText()).doubleValue(), this.getNetworkType().toString(),
 						this.netName.getText(), true));
 			} catch (ParseException e1) {

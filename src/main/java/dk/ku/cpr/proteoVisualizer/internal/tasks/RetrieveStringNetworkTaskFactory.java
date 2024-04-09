@@ -18,12 +18,13 @@ public class RetrieveStringNetworkTaskFactory extends AbstractTaskFactory {
 		return new TaskIterator(new RetrieveStringNetworkTunableTask(this.manager));
 	}
 
-	public TaskIterator createTaskIterator(String query, String delim, Integer taxonID, String species, double cutoff, String netType,
+	public TaskIterator createTaskIterator(String query, String delim, boolean keepCollpased, Integer taxonID, String species, double cutoff, String netType,
 			String netName, boolean isGUI) {
 		RetrieveStringNetworkTask task = new RetrieveStringNetworkTask(this.manager);
 
 		task.setQuery(query);
 		task.setDelimiter(delim);
+		task.setCollapsed(keepCollpased);
 		task.setTaxonID(taxonID);
 		task.setSpecies(species);
 		task.setCutoff(cutoff);
