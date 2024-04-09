@@ -1,6 +1,5 @@
 package dk.ku.cpr.proteoVisualizer.internal.model;
 
-import java.awt.Image;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -249,7 +248,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		CyGroup group = e.getSource();
 		CyNode groupNode = group.getGroupNode();
 		CyNetwork network = e.getNetwork();
-		// TODO: check if string network, and if not ignore the event
+		// TODO: do we need to check if string network, and if not ignore the event
 		// CyNetworkView view = getCurrentNetworkView();
 		// View<CyNode> nodeView = view.getNodeView(groupNode);
 		if (e.collapsed()) {
@@ -341,7 +340,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 				retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/numPossibleEdges));							
 			}
 		}
-		// TODO: [Release] Hide this attribute if possible, but we needed 
+		// TODO: [Release] Hide this attribute if possible, because we need it but not the user 
 		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
 	}
 
@@ -366,7 +365,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 
 	@Override
 	public void handleEvent(GroupAboutToCollapseEvent e) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 		//System.out.println("group about to collapse "
 		//		+ e.getNetwork().getRow(e.getSource().getGroupNode()).get(CyNetwork.NAME, String.class));
 	}
@@ -374,7 +373,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 
 	@Override
 	public void handleEvent(GroupEdgesAddedEvent e) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 		// System.out.println("added edges + " + e.getEdges());
 	}
 

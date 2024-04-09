@@ -42,6 +42,7 @@ import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.util.swing.LookAndFeelUtil;
 
 import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
@@ -308,8 +309,8 @@ public class RetrieveStringNetworkWindow extends AppWindow implements ActionList
 		this.setContentPane(mainPanel);
 
 		this.pack();
-		// TODO: set location relative to what?
-		// this.setLocationRelativeTo(this.manager.getOVCytoPanel().getTopLevelAncestor());
+		// set location relative to the Cytoscape main window
+		this.setLocationRelativeTo(manager.getService(CySwingApplication.class).getJFrame());
 
 	}
  	

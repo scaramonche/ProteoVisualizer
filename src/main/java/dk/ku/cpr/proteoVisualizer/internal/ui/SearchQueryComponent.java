@@ -145,7 +145,6 @@ public class SearchQueryComponent extends JTextField {
 
 	private void updateQueryTextField() {
 		// String text = query.stream().collect(Collectors.joining(" "));
-		// TODO: truncate the text -- no need for this to be the entire string
 		String text = queryTextArea.getText();
 		if (text.length() > 30)
 			text = text.substring(0, 30)+"...";

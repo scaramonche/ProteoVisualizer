@@ -271,7 +271,6 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			}
 		}
 
-		// TODO: [Release] Remove columns that are not needed
 		// add needed new columns
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 				SharedProperties.USE_ENRICHMENT, false);
@@ -327,7 +326,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				// add a new identity edge between the duplicated nodes
 				CyEdge newIdentityEdge = retrievedNetwork.addEdge(proteinNode, newDuplNode, false);
 				retrievedNetwork.getRow(newIdentityEdge).set(CyEdge.INTERACTION, SharedProperties.EDGE_TYPE_IDENTITY);
-				// TODO: why is this needed?
+				// we need to set the edge type ourselves
 				retrievedNetwork.getRow(newIdentityEdge).set(CyNetwork.NAME,
 						retrievedNetwork.getRow(proteinNode).get(CyNetwork.NAME, String.class) + " (" + SharedProperties.EDGE_TYPE_IDENTITY + ") "
 								+ retrievedNetwork.getRow(newDuplNode).get(CyNetwork.NAME, String.class));

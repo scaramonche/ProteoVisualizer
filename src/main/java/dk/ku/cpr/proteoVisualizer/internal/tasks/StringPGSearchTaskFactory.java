@@ -169,13 +169,13 @@ public class StringPGSearchTaskFactory extends AbstractNetworkSearchTaskFactory 
 
 	@Override
 	public void taskFinished(ObservableTask task) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 		
 	}
 
 	@Override
 	public void allFinished(FinishStatus finishStatus) {
-		// TODO Auto-generated method stub
+		// Auto-generated method stub
 		
 	}
 

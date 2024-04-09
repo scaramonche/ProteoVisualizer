@@ -21,7 +21,7 @@ public class ShowRetrieveWindowTaskFactory extends AbstractTaskFactory {
 
 	@Override
 	public boolean isReady() {
-		// TODO: return true when?
+		// TODO: when should this task factory be disabled?
 		return super.isReady();
 	}
 }

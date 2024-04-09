@@ -1,7 +1,6 @@
 package dk.ku.cpr.proteoVisualizer.internal.model;
 
 public enum NetworkType {
-	// TODO: move names to sharedproperties?
 	FUNCTIONAL("full STRING network", "functional"),
 	PHYSICAL("physical subnetwork", "physical");
 	
