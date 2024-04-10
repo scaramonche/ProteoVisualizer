@@ -163,8 +163,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		String query = protected_query;
 		Set<String> queryIDs = new HashSet<String>();
 		
-		System.out.println("query initial: " + query);
-		System.out.println("is gui: " + isGUI);
+		//System.out.println("query initial: " + query);
+		//System.out.println("is gui: " + isGUI);
 		// Strip off any blank lines as well as trailing spaces
 		if (isGUI) {
 			queryIDs = new HashSet<String>(Arrays.asList(query.split("\n")));
@@ -272,6 +272,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		}
 
 		// add needed new columns
+		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNetworkTable(), Boolean.class,
+				SharedProperties.COLLAPSED, false);
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), Boolean.class,
 				SharedProperties.USE_ENRICHMENT, false);
 		manager.createStringColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), String.class,
@@ -459,6 +461,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// collapse all the groups if the user selected this option
 		// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
 		if (this.protected_collapsed) {
+			retrievedNetwork.getRow(retrievedNetwork).set(SharedProperties.COLLAPSED, true);
 			for (CyGroup group : groups) {
 				// System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
 				group.collapse(retrievedNetwork);				

@@ -189,7 +189,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 	}
 	
 	public ImageIcon getPVImageIcon() {
-	    return new ImageIcon(getClass().getResource("/logo_trial_3_icon.png"));
+	    return new ImageIcon(getClass().getResource("/logo_trial_4_icon.png"));
 	    //if (imageicon.getIconWidth() > 36) {
 		//	return new ImageIcon(imageicon.getImage().getScaledInstance(-1, 26, Image.SCALE_DEFAULT));
 		//} else {
@@ -248,6 +248,16 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		CyGroup group = e.getSource();
 		CyNode groupNode = group.getGroupNode();
 		CyNetwork network = e.getNetwork();
+
+		// do edge attribute aggregation for the stringdb namespace columns
+		Collection<CyColumn> stringdbCols = network.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
+		List<String> edgeColsToAggregate = new ArrayList<String>();
+		for (CyColumn col : stringdbCols) {
+			if (col == null || !col.getType().equals(Double.class)) 
+				continue;
+			edgeColsToAggregate.add(col.getName());
+		}
+
 		// TODO: do we need to check if string network, and if not ignore the event
 		// CyNetworkView view = getCurrentNetworkView();
 		// View<CyNode> nodeView = view.getNodeView(groupNode);
@@ -257,6 +267,27 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 			if (network.getDefaultNodeTable().getColumn(SharedProperties.STYLE) != null)
 				network.getRow(groupNode).set(SharedProperties.STYLE, "string:");
 			//nodeView.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 255);
+			
+			// aggregate edge attributes if not already done
+			List<CyEdge> groupNodeEdges = network.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
+			for (CyEdge newEdge : groupNodeEdges) {
+				Boolean edgeTypeMeta = group.getRootNetwork().getRow(newEdge, CyNetwork.HIDDEN_ATTRS).get("__isMetaEdge", Boolean.class);
+				Boolean edgeAggregated = group.getRootNetwork().getRow(newEdge).get(SharedProperties.EDGEAGGREGATED, Boolean.class);
+				// ignore edge if it is NOT a meta edge or if we already aggregated the attributes for it
+				if (edgeTypeMeta == null || !edgeTypeMeta || (edgeAggregated != null && edgeAggregated)
+						|| network.getDefaultEdgeTable().getColumn(SharedProperties.SCORE) == null)
+					continue;
+				System.out.println("aggregate edge attributes for edge with SUID " + newEdge.getSUID());
+				// find the neighbor
+				CyNode neighbor = null;
+				if (group.getGroupNode().equals(newEdge.getSource())) 
+					neighbor = newEdge.getTarget();
+				else 
+					neighbor = newEdge.getSource();
+				// aggregate edge attributes 
+				aggregateGroupEdgeAttributes(network, group, newEdge, group.getNodeList(), neighbor, edgeColsToAggregate);
+			}
+
 		} else {
 			// System.out.println("group expanded");
 			// change style of string node
@@ -265,14 +296,6 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 			//nodeView.setVisualProperty(BasicVisualLexicon.NODE_TRANSPARENCY, 50);
 			
 			// aggregate edge attributes if not already done 
-			// do edge attribute aggregation for the stringdb namespace columns
-			Collection<CyColumn> stringdbCols = network.getDefaultEdgeTable().getColumns(SharedProperties.STRINGDB_NAMESPACE);
-			List<String> edgeColsToAverage = new ArrayList<String>();
-			for (CyColumn col : stringdbCols) {
-				if (col == null || !col.getType().equals(Double.class)) 
-					continue;
-				edgeColsToAverage.add(col.getName());
-			}
 			// get all external edges, includes both meta edges and edges from any node in the group to any other node in the network
 			// not sure why we cannot get the neighbors using network.getAdjacentEdgeList(group.getGroupNode(), Type.ANY);
 			Set<CyEdge> externalEdges = group.getExternalEdgeList();
@@ -287,9 +310,9 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 				CyNode source = newEdge.getSource();
 				CyNode target = newEdge.getTarget();
 				if (group.getNodeList().contains(source)) {
-					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(source)), target, edgeColsToAverage);					
+					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(source)), target, edgeColsToAggregate);					
 				} else if (group.getNodeList().contains(target)) {
-					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(target)), source, edgeColsToAverage);
+					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(target)), source, edgeColsToAggregate);
 				} else {
 					System.out.println("neither source nor target is a node in the group that was uncollapsed");
 				}

@@ -95,6 +95,9 @@ public class SharedProperties {
 	public static String EDGEEXISTING = "# actual edges";
 	public static String EDGEAGGREGATED = "aggregated";
 
+	// Network information 
+	public static String COLLAPSED = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "collapsed";
+	
 	// We forbid the class to have instances
 	private SharedProperties() {
 	}

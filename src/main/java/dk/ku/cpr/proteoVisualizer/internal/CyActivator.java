@@ -14,7 +14,6 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.cytoscape.application.CyUserLog;
-import org.cytoscape.application.swing.search.NetworkSearchTaskFactory;
 import org.cytoscape.group.CyGroupSettingsManager;
 import org.cytoscape.group.CyGroupSettingsManager.DoubleClickAction;
 import org.cytoscape.group.CyGroupSettingsManager.GroupViewType;
@@ -23,6 +22,7 @@ import org.cytoscape.group.events.GroupCollapsedListener;
 import org.cytoscape.group.events.GroupEdgesAddedListener;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.task.NetworkTaskFactory;
 import org.cytoscape.work.TaskFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Version;
@@ -31,6 +31,7 @@ import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
 import dk.ku.cpr.proteoVisualizer.internal.model.SharedProperties;
 import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.AboutTaskFactory;
+import dk.ku.cpr.proteoVisualizer.internal.tasks.CollapseGroupsTaskFactory;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.RetrieveStringNetworkTaskFactory;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.ShowRetrieveWindowTaskFactory;
 
@@ -102,12 +103,23 @@ public class CyActivator extends AbstractCyActivator {
 		}
 		
 		{
+			CollapseGroupsTaskFactory collapseFactory = new CollapseGroupsTaskFactory(manager);
+			Properties collapseProps = new Properties();
+			// menu properties
+			collapseProps.setProperty(PREFERRED_MENU, SharedProperties.APP_PREFERRED_MENU);
+			collapseProps.setProperty(TITLE, "Collapse all groups");
+			collapseProps.setProperty(MENU_GRAVITY, "3.0");
+			collapseProps.setProperty(IN_MENU_BAR, "true");
+			registerService(bc, collapseFactory, NetworkTaskFactory.class, collapseProps);
+		}
+
+		{
 			AboutTaskFactory aboutFactory = new AboutTaskFactory(version, registrar);
 			Properties aboutProps = new Properties();
 			// menu properties
 			aboutProps.setProperty(PREFERRED_MENU, SharedProperties.APP_PREFERRED_MENU);
 			aboutProps.setProperty(TITLE, "About");
-			aboutProps.setProperty(MENU_GRAVITY, "3.0");
+			aboutProps.setProperty(MENU_GRAVITY, "10.0");
 			aboutProps.setProperty(IN_MENU_BAR, "true");
 			// command properties
 			aboutProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
