@@ -17,6 +17,9 @@ import org.cytoscape.command.AvailableCommands;
 import org.cytoscape.command.CommandExecutorTaskFactory;
 import org.cytoscape.group.CyGroup;
 import org.cytoscape.group.CyGroupManager;
+import org.cytoscape.group.CyGroupSettingsManager;
+import org.cytoscape.group.CyGroupSettingsManager.DoubleClickAction;
+import org.cytoscape.group.CyGroupSettingsManager.GroupViewType;
 import org.cytoscape.group.events.GroupAboutToCollapseEvent;
 import org.cytoscape.group.events.GroupAboutToCollapseListener;
 import org.cytoscape.group.events.GroupCollapsedEvent;
@@ -197,6 +200,14 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		//}
 	}
 	
+	public void setGroupSettings() {
+		// Set some properties to the groups app
+		CyGroupSettingsManager groupSettingsManager = getService(CyGroupSettingsManager.class);
+		groupSettingsManager.setGroupViewType(GroupViewType.COMPOUND);
+		groupSettingsManager.setEnableAttributeAggregation(false);
+		groupSettingsManager.setDoubleClickAction(DoubleClickAction.EXPANDCONTRACT);
+	}
+
 	public void registerSearchTaskFactories() {
 		StringPGSearchTaskFactory stringSearch = new StringPGSearchTaskFactory(this, getPVImageIcon());
 		Properties propsSearch = new Properties();

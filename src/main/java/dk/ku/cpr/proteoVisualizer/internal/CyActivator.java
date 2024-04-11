@@ -51,7 +51,7 @@ public class CyActivator extends AbstractCyActivator {
 		final Logger logger = Logger.getLogger(CyUserLog.NAME);
 
 		AppManager manager = new AppManager(registrar);
-
+		manager.setGroupSettings();
 		
 		// Get our version number
 		Version v = bc.getBundle().getVersion();
@@ -66,16 +66,7 @@ public class CyActivator extends AbstractCyActivator {
 			registerService(bc, manager, GroupCollapsedListener.class, new Properties());			
 			registerService(bc, manager, GroupEdgesAddedListener.class, new Properties());
 			// registerService(bc, manager, SelectedNodesAndEdgesListener.class, new Properties());
-		}
-
-		{
-			// Set some properties to the groups app
-			CyGroupSettingsManager groupSettingsManager = getService(bc, CyGroupSettingsManager.class);
-			groupSettingsManager.setGroupViewType(GroupViewType.COMPOUND);
-			groupSettingsManager.setEnableAttributeAggregation(false);
-			groupSettingsManager.setDoubleClickAction(DoubleClickAction.EXPANDCONTRACT);
-		}
-		
+		}		
 		
 		{
 			ShowRetrieveWindowTaskFactory retrieveFactory = new ShowRetrieveWindowTaskFactory(manager);

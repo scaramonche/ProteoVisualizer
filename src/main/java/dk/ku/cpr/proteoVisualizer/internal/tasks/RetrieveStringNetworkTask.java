@@ -339,7 +339,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// find all PGs with more than one node and create group nodes for them
 		// in addition, handle all node attribtues! 
 		CyGroupFactory groupFactory = manager.getService(CyGroupFactory.class);
-		// TODO: fix some cyGroup setting here before creating the nodes?
+		// set the CyGroup setting the way we need them!
+		manager.setGroupSettings();
 		List<CyGroup> groups = new ArrayList<CyGroup>();
 		for (String pg : protected_pg2proteinsMap.keySet()) {
 			List<String> proteins = protected_pg2proteinsMap.get(pg);
