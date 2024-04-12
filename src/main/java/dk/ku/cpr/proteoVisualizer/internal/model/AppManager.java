@@ -254,6 +254,10 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 		return getService(CyApplicationManager.class).getCurrentNetworkView();
 	}
 
+	public CyNetwork getCurrentNetwork() {
+		return getService(CyApplicationManager.class).getCurrentNetwork();
+	}
+
 	@Override
 	public void handleEvent(GroupCollapsedEvent e) {
 		CyGroup group = e.getSource();

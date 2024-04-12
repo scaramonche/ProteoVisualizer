@@ -14,15 +14,13 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.cytoscape.application.CyUserLog;
-import org.cytoscape.group.CyGroupSettingsManager;
-import org.cytoscape.group.CyGroupSettingsManager.DoubleClickAction;
-import org.cytoscape.group.CyGroupSettingsManager.GroupViewType;
 import org.cytoscape.group.events.GroupAboutToCollapseListener;
 import org.cytoscape.group.events.GroupCollapsedListener;
 import org.cytoscape.group.events.GroupEdgesAddedListener;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.task.NetworkTaskFactory;
+import org.cytoscape.task.NodeViewTaskFactory;
 import org.cytoscape.work.TaskFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Version;
@@ -31,6 +29,7 @@ import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
 import dk.ku.cpr.proteoVisualizer.internal.model.SharedProperties;
 import dk.ku.cpr.proteoVisualizer.internal.model.StringSpecies;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.AboutTaskFactory;
+import dk.ku.cpr.proteoVisualizer.internal.tasks.ChangeGroupReprTaskFactory;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.CollapseGroupsTaskFactory;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.RetrieveStringNetworkTaskFactory;
 import dk.ku.cpr.proteoVisualizer.internal.tasks.ShowRetrieveWindowTaskFactory;
@@ -102,6 +101,34 @@ public class CyActivator extends AbstractCyActivator {
 			collapseProps.setProperty(MENU_GRAVITY, "3.0");
 			collapseProps.setProperty(IN_MENU_BAR, "true");
 			registerService(bc, collapseFactory, NetworkTaskFactory.class, collapseProps);
+		}
+
+		{
+			// Register our "Expand network" factory
+			// TODO: network task factory might not be needed?
+			ChangeGroupReprTaskFactory changeRrpr = new ChangeGroupReprTaskFactory(manager);
+			//Properties props = new Properties();
+			//props.setProperty(PREFERRED_MENU, SharedProperties.APP_PREFERRED_MENU);
+			//props.setProperty(TITLE, "Change group representative");
+			//props.setProperty(MENU_GRAVITY, "1.0");
+			//props.setProperty(IN_MENU_BAR, "true");
+			//registerService(bc, changeRrpr, NetworkTaskFactory.class, props);
+
+			//Properties changeReprProps = new Properties();
+			//changeReprProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
+			//changeReprProps.setProperty(COMMAND, "change repr");
+			//changeReprProps.setProperty(COMMAND_DESCRIPTION, "Change group representative");
+			//changeReprProps.setProperty(COMMAND_LONG_DESCRIPTION, "");
+			//changeReprProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
+			//changeReprProps.setProperty(COMMAND_EXAMPLE_JSON, JSON_EXAMPLE);			
+			//registerService(bc, changeRrpr, TaskFactory.class, changeReprProps);
+			
+			Properties props3 = new Properties();
+			props3.setProperty(PREFERRED_MENU, SharedProperties.APP_PREFERRED_MENU);
+			props3.setProperty(TITLE, "Change group representative");
+			props3.setProperty(MENU_GRAVITY, "1.0");
+			props3.setProperty(IN_MENU_BAR, "false");
+			registerService(bc, changeRrpr, NodeViewTaskFactory.class, props3);
 		}
 
 		{

@@ -28,7 +28,7 @@ public class CollapseGroupsTaskFactory extends AbstractNetworkTaskFactory implem
 	}
 
 	public boolean isOn(CyNetwork network) {
-		if (network.getDefaultNetworkTable().getColumn(SharedProperties.COLLAPSED) != null
+		if (isReady(network) && network.getDefaultNetworkTable().getColumn(SharedProperties.COLLAPSED) != null
 				&& network.getRow(network).get(SharedProperties.COLLAPSED, Boolean.class) != null)
 			return network.getRow(network).get(SharedProperties.COLLAPSED, Boolean.class).booleanValue();
 		return false;
