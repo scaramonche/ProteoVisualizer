@@ -86,7 +86,6 @@ public class ChangeGroupReprTask extends AbstractTask {
 			// groupNodeSUID = groupNode.getSUID();
 			group = groupManager.getGroup(groupNode, network);
 			initGroupNodesList();
-			// TODO: set selected to current node representative
 		}
 	}
 	
@@ -95,7 +94,15 @@ public class ChangeGroupReprTask extends AbstractTask {
 		taskMonitor.setTitle("Change group representative");
 		System.out.println("change to: " + groupNodesList.getSelectedValue());
 		// TODO: change group node attributes to new repr node
-		
+		if (network == null || !groupNodesMap.containsKey(groupNodesList.getSelectedValue()))
+			return;
+		CyNode newRepr = groupNodesMap.get(groupNodesList.getSelectedValue());
+		for (String attr : SharedProperties.nodeAttrinbutesToCopyString) {
+			if (network.getDefaultNodeTable().getColumn(attr) == null)
+				continue;
+			network.getRow(groupNode).set(attr,
+					network.getRow(newRepr).get(attr, String.class));					
+		}
 	}
 
 	

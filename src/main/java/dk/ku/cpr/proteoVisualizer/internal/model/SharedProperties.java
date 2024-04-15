@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.subnetwork.CyRootNetwork;
 import org.cytoscape.work.ServiceProperties;
 
 /**
@@ -83,7 +84,7 @@ public class SharedProperties {
 	// public static String SMILES = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "smiles";
 
 	// Handling of attributes
-	public static List<String> nodeAttrinbutesToCopyString = new ArrayList<String>(Arrays.asList(CyNetwork.NAME, STRINGID, ID, NAMESPACE, SPECIES, ELABEL_STYLE));	
+	public static List<String> nodeAttrinbutesToCopyString = new ArrayList<String>(Arrays.asList(CyRootNetwork.SHARED_NAME, CyNetwork.NAME, STRINGID, ID, NAMESPACE, SPECIES, ELABEL_STYLE));	
 	public static List<String> nodeAttrinbutesNotToCopyString = new ArrayList<String>(Arrays.asList(DESCRIPTION, SEQUENCE));
 	public static List<String> nodeAttrinbutesToSetManually = new ArrayList<String>(Arrays.asList(QUERYTERM, STYLE, TYPE, USE_ENRICHMENT));
 	public static List<String> nodeAttrinbutesToConcatString = new ArrayList<String>(Arrays.asList(CANONICAL, DISPLAY, FULLNAME, DEVLEVEL, FAMILY));

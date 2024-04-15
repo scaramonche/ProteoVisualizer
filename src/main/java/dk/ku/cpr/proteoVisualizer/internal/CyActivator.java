@@ -104,9 +104,16 @@ public class CyActivator extends AbstractCyActivator {
 		}
 
 		{
-			// Register our "Expand network" factory
-			// TODO: network task factory might not be needed?
+			// Register the Change repr factory as a node view task factory (appears on right click)
 			ChangeGroupReprTaskFactory changeRrpr = new ChangeGroupReprTaskFactory(manager);
+			Properties props = new Properties();
+			props.setProperty(PREFERRED_MENU, SharedProperties.APP_PREFERRED_MENU);
+			props.setProperty(TITLE, "Change group representative");
+			props.setProperty(MENU_GRAVITY, "1.0");
+			props.setProperty(IN_MENU_BAR, "false");
+			registerService(bc, changeRrpr, NodeViewTaskFactory.class, props);
+
+			// Don't think this one is needed
 			//Properties props = new Properties();
 			//props.setProperty(PREFERRED_MENU, SharedProperties.APP_PREFERRED_MENU);
 			//props.setProperty(TITLE, "Change group representative");
@@ -114,6 +121,7 @@ public class CyActivator extends AbstractCyActivator {
 			//props.setProperty(IN_MENU_BAR, "true");
 			//registerService(bc, changeRrpr, NetworkTaskFactory.class, props);
 
+			// TODO: can we have the change repr as command?
 			//Properties changeReprProps = new Properties();
 			//changeReprProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
 			//changeReprProps.setProperty(COMMAND, "change repr");
@@ -121,14 +129,7 @@ public class CyActivator extends AbstractCyActivator {
 			//changeReprProps.setProperty(COMMAND_LONG_DESCRIPTION, "");
 			//changeReprProps.setProperty(COMMAND_SUPPORTS_JSON, "true");
 			//changeReprProps.setProperty(COMMAND_EXAMPLE_JSON, JSON_EXAMPLE);			
-			//registerService(bc, changeRrpr, TaskFactory.class, changeReprProps);
-			
-			Properties props3 = new Properties();
-			props3.setProperty(PREFERRED_MENU, SharedProperties.APP_PREFERRED_MENU);
-			props3.setProperty(TITLE, "Change group representative");
-			props3.setProperty(MENU_GRAVITY, "1.0");
-			props3.setProperty(IN_MENU_BAR, "false");
-			registerService(bc, changeRrpr, NodeViewTaskFactory.class, props3);
+			//registerService(bc, changeRrpr, TaskFactory.class, changeReprProps);			
 		}
 
 		{
