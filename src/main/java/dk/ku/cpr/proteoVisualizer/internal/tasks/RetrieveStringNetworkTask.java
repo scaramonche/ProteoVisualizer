@@ -341,6 +341,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		CyGroupFactory groupFactory = manager.getService(CyGroupFactory.class);
 		// set the CyGroup setting the way we need them!
 		manager.setGroupSettings();
+		// go over all protein groups
 		List<CyGroup> groups = new ArrayList<CyGroup>();
 		for (String pg : protected_pg2proteinsMap.keySet()) {
 			List<String> proteins = protected_pg2proteinsMap.get(pg);

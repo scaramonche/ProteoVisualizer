@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -37,11 +38,15 @@ import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
 import org.cytoscape.model.subnetwork.CySubNetwork;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
+import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
 import org.cytoscape.work.SynchronousTaskManager;
 import org.cytoscape.work.TaskIterator;
 import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
+import org.cytoscape.work.TunableSetter;
 
 import dk.ku.cpr.proteoVisualizer.internal.tasks.StringPGSearchTaskFactory;
 
@@ -330,8 +335,25 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(target)), source, edgeColsToAggregate);
 				} else {
 					System.out.println("neither source nor target is a node in the group that was uncollapsed");
+				}					
+			}
+			// get a network view and apply a layout
+			// TODO: move layout code to a utility method
+			CyNetworkView networkView = getCurrentNetworkView();
+			CyLayoutAlgorithm alg = getService(CyLayoutAlgorithmManager.class).getLayout("grid");
+			Object context = alg.createLayoutContext();			
+			TunableSetter setter = getService(TunableSetter.class);
+			Map<String, Object> layoutArgs = new HashMap<>();
+			layoutArgs.put("nodeVerticalSpacing", 80.0);
+			layoutArgs.put("nodeHorizontalSpacing", 80.0);
+			setter.applyTunables(context, layoutArgs);
+			// layout the group nodes only
+			if (networkView != null && networkView.getModel().equals(network)) {
+				Set<View<CyNode>> nodeViews = new HashSet<>();
+				for (CyNode node : group.getNodeList()) {
+					nodeViews.add(networkView.getNodeView(node));
 				}
-					
+				executeTask(alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
 			}
 		}
 	}
