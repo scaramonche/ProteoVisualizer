@@ -528,18 +528,19 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		currentVS.addVisualMappingFunction(cMapping);
 		
 		// lay out network after collapsing groups
-		// TODO: do layout if we can figure out how to position the nodes in the group when uncollapsing
-//		CyNetworkView networkView = manager.getCurrentNetworkView();
-//		if (networkView != null && networkView.getModel().equals(retrievedNetwork)) {
-//			CyLayoutAlgorithm alg = manager.getService(CyLayoutAlgorithmManager.class).getLayout("force-directed");
-//			Object context = alg.createLayoutContext();
-//			TunableSetter setter = manager.getService(TunableSetter.class);
-//			Map<String, Object> layoutArgs = new HashMap<>();
-//			layoutArgs.put("defaultNodeMass", 10.0);
-//			setter.applyTunables(context, layoutArgs);
-//			Set<View<CyNode>> nodeViews = new HashSet<>(networkView.getNodeViews());
-//			insertTasksAfterCurrentTask(alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
-//		}
+		// do layout if we can figure out how to position the nodes in the group when uncollapsing
+		// we apply a grid layout on the uncollapsed group
+		CyNetworkView networkView = manager.getCurrentNetworkView();
+		if (networkView != null && networkView.getModel().equals(retrievedNetwork)) {
+			CyLayoutAlgorithm alg = manager.getService(CyLayoutAlgorithmManager.class).getLayout("force-directed");
+			Object context = alg.createLayoutContext();
+			TunableSetter setter = manager.getService(TunableSetter.class);
+			Map<String, Object> layoutArgs = new HashMap<>();
+			layoutArgs.put("defaultNodeMass", 10.0);
+			setter.applyTunables(context, layoutArgs);
+			Set<View<CyNode>> nodeViews = new HashSet<>(networkView.getNodeViews());
+			insertTasksAfterCurrentTask(alg.createTaskIterator(networkView, context, nodeViews, SharedProperties.SCORE));
+		}
 	}
 
 	@Override

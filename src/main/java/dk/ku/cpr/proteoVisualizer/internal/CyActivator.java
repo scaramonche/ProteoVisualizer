@@ -122,6 +122,7 @@ public class CyActivator extends AbstractCyActivator {
 			//registerService(bc, changeRrpr, NetworkTaskFactory.class, props);
 
 			// TODO: can we have the change repr as command?
+			// it probably needs to be a different task
 			//Properties changeReprProps = new Properties();
 			//changeReprProps.setProperty(COMMAND_NAMESPACE, SharedProperties.APP_COMMAND_NAMESPACE);
 			//changeReprProps.setProperty(COMMAND, "change repr");

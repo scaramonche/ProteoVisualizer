@@ -297,7 +297,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 				if (edgeTypeMeta == null || !edgeTypeMeta || (edgeAggregated != null && edgeAggregated)
 						|| network.getDefaultEdgeTable().getColumn(SharedProperties.SCORE) == null)
 					continue;
-				System.out.println("aggregate edge attributes for edge with SUID " + newEdge.getSUID());
+				// System.out.println("aggregate edge attributes for edge with SUID " + newEdge.getSUID());
 				// find the neighbor
 				CyNode neighbor = null;
 				if (group.getGroupNode().equals(newEdge.getSource())) 
@@ -326,16 +326,17 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 				if (edgeTypeMeta == null || !edgeTypeMeta || (edgeAggregated != null && edgeAggregated)
 						|| network.getDefaultEdgeTable().getColumn(SharedProperties.SCORE) == null)
 					continue;
-				System.out.println("aggregate edge attributes for edge with SUID " + newEdge.getSUID());
+				// System.out.println("aggregate edge attributes for edge with SUID " + newEdge.getSUID());
 				CyNode source = newEdge.getSource();
 				CyNode target = newEdge.getTarget();
 				if (group.getNodeList().contains(source)) {
 					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(source)), target, edgeColsToAggregate);					
 				} else if (group.getNodeList().contains(target)) {
 					aggregateGroupEdgeAttributes(network, group, newEdge, new ArrayList<CyNode>(Arrays.asList(target)), source, edgeColsToAggregate);
-				} else {
-					System.out.println("neither source nor target is a node in the group that was uncollapsed");
-				}					
+				} 
+				//else {
+				//	System.out.println("neither source nor target is a node in the group that was uncollapsed");
+				//}					
 			}
 			// get a network view and apply a layout
 			// TODO: move layout code to a utility method
@@ -400,26 +401,26 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 				retrievedNetwork.getRow(newEdge).set(col, Double.valueOf(averagedValue/numPossibleEdges));							
 			}
 		}
-		// TODO: [Release] Hide this attribute if possible, because we need it but not the user 
+		// TODO: Hide this attribute if possible, because we need it but not the user 
 		retrievedNetwork.getRow(newEdge).set(SharedProperties.EDGEAGGREGATED, Boolean.valueOf(true));
 	}
 
 	@Override
 	public void handleEvent(SelectedNodesAndEdgesEvent event) {
-		// TODO: figure out what to do when group nodes are selected
+		// TODO: figure out if and what to do when group nodes are selected
 		// needs to add the listener to app manager in CyActivator
-		Collection<CyNode> nodes = event.getSelectedNodes();
-		CyNetwork network = event.getNetwork();
-		CyGroupManager groupManager = getService(CyGroupManager.class);
-		for (CyNode node : nodes) {
-			if (groupManager.isGroup(node, network)) {
-				CyGroup group = groupManager.getGroup(node, network);
-				for (CyNode groupNode : group.getNodeList()) {
-					if (network.getRow(groupNode) != null)
-						network.getRow(groupNode).set(CyNetwork.SELECTED, true);
-				}
-			}
-		}
+//		Collection<CyNode> nodes = event.getSelectedNodes();
+//		CyNetwork network = event.getNetwork();
+//		CyGroupManager groupManager = getService(CyGroupManager.class);
+//		for (CyNode node : nodes) {
+//			if (groupManager.isGroup(node, network)) {
+//				CyGroup group = groupManager.getGroup(node, network);
+//				for (CyNode groupNode : group.getNodeList()) {
+//					if (network.getRow(groupNode) != null)
+//						network.getRow(groupNode).set(CyNetwork.SELECTED, true);
+//				}
+//			}
+//		}
 	}
 	
 

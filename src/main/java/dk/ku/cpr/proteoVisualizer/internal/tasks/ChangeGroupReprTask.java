@@ -92,8 +92,8 @@ public class ChangeGroupReprTask extends AbstractTask {
 	@Override
 	public void run(TaskMonitor taskMonitor) throws Exception {
 		taskMonitor.setTitle("Change group representative");
-		System.out.println("change to: " + groupNodesList.getSelectedValue());
-		// TODO: change group node attributes to new repr node
+		//System.out.println("change to: " + groupNodesList.getSelectedValue());
+		// change group node attributes to new repr node
 		if (network == null || !groupNodesMap.containsKey(groupNodesList.getSelectedValue()))
 			return;
 		CyNode newRepr = groupNodesMap.get(groupNodesList.getSelectedValue());

@@ -35,7 +35,7 @@ public class SharedProperties {
 	public static final String STRING_CMD_LIST_SPECIES = "list species";
 
 
-	public static final int defaultConfidence = 70;
+	public static final int defaultConfidence = 40;
 	
 	// App specific terms
 	public static String DEFAULT_PG_DELIMITER = ";";
@@ -44,7 +44,7 @@ public class SharedProperties {
 	public static String ATTRIBUTE_CONCAT_SYMBOL = ";";
 	public static String EDGE_TYPE_IDENTITY = "identity";
 	
-	// TODO: add delimiters that make sense
+	// TODO: add more delimiters that make sense?
 	public static String[] pg_delimiters = new String[] {DEFAULT_PG_DELIMITER, "|", ","};
 	
 	// Node or edge attribute namesspaces
@@ -91,10 +91,10 @@ public class SharedProperties {
 
 	// Edge information
 	public static String SCORE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "score";
-	public static String EDGEPROB = "edge prob";
-	public static String EDGEPOSSIBLE = "# possible edges";
-	public static String EDGEEXISTING = "# actual edges";
-	public static String EDGEAGGREGATED = "aggregated";
+	public static String EDGEPROB = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "edge prob";
+	public static String EDGEPOSSIBLE = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "# possible edges";
+	public static String EDGEEXISTING = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "# actual edges";
+	public static String EDGEAGGREGATED = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "aggregated";
 
 	// Network information 
 	public static String COLLAPSED = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "collapsed";
