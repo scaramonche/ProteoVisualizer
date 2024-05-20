@@ -43,15 +43,18 @@ public class CyActivator extends AbstractCyActivator {
 	}
 
 	public void start(BundleContext bc) {
-		System.out.println("Starting Proteo Visualizer!");
+		final Logger logger = Logger.getLogger(CyUserLog.NAME);
+
+		String startMessage = "Starting Proteo Visualizer!";
+		logger.info(startMessage);
+		System.out.println(startMessage);
 
 		// Get a handle on the CyServiceRegistrar
 		CyServiceRegistrar registrar = getService(bc, CyServiceRegistrar.class);
-		final Logger logger = Logger.getLogger(CyUserLog.NAME);
 
 		AppManager manager = new AppManager(registrar);
 		manager.setGroupSettings();
-		
+
 		// Get our version number
 		Version v = bc.getBundle().getVersion();
 		String version = v.toString(); // The full version
@@ -151,7 +154,8 @@ public class CyActivator extends AbstractCyActivator {
 			registerService(bc, aboutFactory, TaskFactory.class, aboutProps);
 		}
 
-		logger.info("Proteo Visualizer " + version + " initialized.");
-		System.out.println("Proteo Visualizer " + version + " initialized.");
+		String versionMessage = "Proteo Visualizer " + version + " initialized.";
+		logger.info(versionMessage);
+		System.out.println(versionMessage);
 	}
 }
