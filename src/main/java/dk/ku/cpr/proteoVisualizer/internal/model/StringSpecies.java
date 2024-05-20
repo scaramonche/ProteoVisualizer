@@ -54,14 +54,14 @@ public class StringSpecies implements Comparable<StringSpecies> {
 			nameSpecies.put(species.toString(), species);
 
 			// TODO: Fix the way we set the model species
-			if (species.getAbbrevName().equals("Homo sapiens")) {
-				modelSpecies.add(species);
+			String homoSapiensAbbrevName = "Homo sapiens";
+			if (species.getAbbrevName().equals(homoSapiensAbbrevName)) {
 				humanSpecies = species;
-			} else if (species.getAbbrevName().equals("Mus musculus")
-					|| species.getAbbrevName().equals("Rattus norvegicus")
-					|| species.getAbbrevName().equals("Saccharomyces cerevisiae")
-					|| species.getAbbrevName().equals("Caenorhabditis elegans")
-					|| species.getAbbrevName().equals("Escherichia coli str. K-12 substr. MG1655")) {
+			}
+
+			List<String> modelSpeciesAbbrevNames = List.of(homoSapiensAbbrevName, "Mus musculus", "Rattus norvegicus",
+					"Saccharomyces cerevisiae", "Caenorhabditis elegans", "Escherichia coli str. K-12 substr. MG1655");
+			if (modelSpeciesAbbrevNames.contains(species.getAbbrevName())) {
 				modelSpecies.add(species);
 			}
 		}
