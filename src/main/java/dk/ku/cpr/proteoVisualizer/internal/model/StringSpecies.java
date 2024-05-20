@@ -12,14 +12,15 @@ import org.cytoscape.work.TaskObserver;
 
 
 public class StringSpecies implements Comparable<StringSpecies> {
+	private static Map<String, StringSpecies> nameToSpeciesMap;
+	private static List<StringSpecies> modelSpecies;
+	private static List<StringSpecies> allSpecies;
+	private static StringSpecies humanSpecies;
+
 	private Integer taxonID;
 	// TODO: check species names and sync with current version
 	private String abbreviatedName;
 	private String scientificName;
-	private static Map<String, StringSpecies> nameSpecies;
-	private static List<StringSpecies> modelSpecies;
-	private static List<StringSpecies> allSpecies;
-	private static StringSpecies humanSpecies;
 	
 	public StringSpecies(Map<String,String> data) {
 		super();
@@ -35,9 +36,9 @@ public class StringSpecies implements Comparable<StringSpecies> {
 
 	public static List<StringSpecies> search(String str) {
 		List<StringSpecies> retValue = new ArrayList<StringSpecies>();
-		for (String s: nameSpecies.keySet()) {
+		for (String s: nameToSpeciesMap.keySet()) {
 			if (s.regionMatches(true, 0, str, 0, str.length())) { 
-				retValue.add(nameSpecies.get(s));
+				retValue.add(nameToSpeciesMap.get(s));
 			}
 		}
 		return retValue;
@@ -46,22 +47,22 @@ public class StringSpecies implements Comparable<StringSpecies> {
 	public static List<StringSpecies> readSpecies(List<Map<String, String>> speciesFromTask) throws Exception {
 		modelSpecies = new ArrayList<StringSpecies>();
 		allSpecies = new ArrayList<StringSpecies>();
-		nameSpecies = new TreeMap<String, StringSpecies>();
+		nameToSpeciesMap = new TreeMap<String, StringSpecies>();
 
 		for (Map<String, String> r : speciesFromTask) {
 			StringSpecies species = new StringSpecies(r);
 			allSpecies.add(species);
-			nameSpecies.put(species.toString(), species);
+			nameToSpeciesMap.put(species.toString(), species);
 
 			// TODO: Fix the way we set the model species
-			if (species.getAbbrevName().equals("Homo sapiens")) {
-				modelSpecies.add(species);
+			String homoSapiensAbbrevName = "Homo sapiens";
+			if (species.getAbbrevName().equals(homoSapiensAbbrevName)) {
 				humanSpecies = species;
-			} else if (species.getAbbrevName().equals("Mus musculus")
-					|| species.getAbbrevName().equals("Rattus norvegicus")
-					|| species.getAbbrevName().equals("Saccharomyces cerevisiae")
-					|| species.getAbbrevName().equals("Caenorhabditis elegans")
-					|| species.getAbbrevName().equals("Escherichia coli str. K-12 substr. MG1655")) {
+			}
+
+			List<String> modelSpeciesAbbrevNames = List.of(homoSapiensAbbrevName, "Mus musculus", "Rattus norvegicus",
+					"Saccharomyces cerevisiae", "Caenorhabditis elegans", "Escherichia coli str. K-12 substr. MG1655");
+			if (modelSpeciesAbbrevNames.contains(species.getAbbrevName())) {
 				modelSpecies.add(species);
 			}
 		}
@@ -74,14 +75,19 @@ public class StringSpecies implements Comparable<StringSpecies> {
 	}
 
 	public static StringSpecies getSpecies(String speciesName) {
-		if (nameSpecies == null || speciesName == null) return null;
-		if (nameSpecies.containsKey(speciesName))
-			return nameSpecies.get(speciesName);
-
-		if (allSpecies == null) return null;
+		if (speciesName == null) {
+			return null;
+		}
+		if (nameToSpeciesMap != null && nameToSpeciesMap.containsKey(speciesName)) {
+			return nameToSpeciesMap.get(speciesName);
+		}
+		if (allSpecies == null) {
+			return null;
+		}
 		for (StringSpecies s: allSpecies) {
-			if (s.getName().equalsIgnoreCase(speciesName))
+			if (s.getName().equalsIgnoreCase(speciesName)) {
 				return s;
+			}
 		}
 		return null;
 	}
@@ -137,8 +143,8 @@ public class StringSpecies implements Comparable<StringSpecies> {
 					Thread.sleep(500);
 				} catch (Exception e) {}
 			}
-			if (manager.haveCommand("string", "list species"))
-				manager.executeCommand("string", "list species", null, this, true);
+
+			manager.executeCommand("string", "list species", null, this, true);
 		}
 
 		@Override

@@ -5,7 +5,7 @@ import java.awt.Font;
 import java.awt.FontFormatException;
 import java.io.IOException;
 
-public abstract class IconUtils {
+public final class IconUtils {
 	
 	// stringApp Icon
 	public static final String STRING_ICON = "\uE903";
@@ -27,12 +27,10 @@ public abstract class IconUtils {
 	static {
 		try {
 			iconFont = Font.createFont(Font.TRUETYPE_FONT, IconUtils.class.getResourceAsStream("/fonts/string.ttf"));
-		} catch (FontFormatException e) {
-			throw new RuntimeException();
-		} catch (IOException e) {
+		} catch (FontFormatException | IOException e) {
 			throw new RuntimeException();
 		}
-	}
+    }
 	
 	public static Font getIconFont(float size) {
 		return iconFont.deriveFont(size);
