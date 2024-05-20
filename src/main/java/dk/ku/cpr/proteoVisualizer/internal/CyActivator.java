@@ -36,7 +36,7 @@ import dk.ku.cpr.proteoVisualizer.internal.tasks.ShowRetrieveWindowTaskFactory;
 
 
 public class CyActivator extends AbstractCyActivator {
-	String JSON_EXAMPLE = "{\"SUID\":1234}";
+	//String JSON_EXAMPLE = "{\"SUID\":1234}";
 
 	public CyActivator() {
 		super();
@@ -151,9 +151,7 @@ public class CyActivator extends AbstractCyActivator {
 			registerService(bc, aboutFactory, TaskFactory.class, aboutProps);
 		}
 
-
 		logger.info("Proteo Visualizer " + version + " initialized.");
 		System.out.println("Proteo Visualizer " + version + " initialized.");
-	
 	}
 }
