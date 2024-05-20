@@ -12,14 +12,15 @@ import org.cytoscape.work.TaskObserver;
 
 
 public class StringSpecies implements Comparable<StringSpecies> {
+	private static Map<String, StringSpecies> nameToSpeciesMap;
+	private static List<StringSpecies> modelSpecies;
+	private static List<StringSpecies> allSpecies;
+	private static StringSpecies humanSpecies;
+
 	private Integer taxonID;
 	// TODO: check species names and sync with current version
 	private String abbreviatedName;
 	private String scientificName;
-	private static Map<String, StringSpecies> nameSpecies;
-	private static List<StringSpecies> modelSpecies;
-	private static List<StringSpecies> allSpecies;
-	private static StringSpecies humanSpecies;
 	
 	public StringSpecies(Map<String,String> data) {
 		super();
@@ -35,9 +36,9 @@ public class StringSpecies implements Comparable<StringSpecies> {
 
 	public static List<StringSpecies> search(String str) {
 		List<StringSpecies> retValue = new ArrayList<StringSpecies>();
-		for (String s: nameSpecies.keySet()) {
+		for (String s: nameToSpeciesMap.keySet()) {
 			if (s.regionMatches(true, 0, str, 0, str.length())) { 
-				retValue.add(nameSpecies.get(s));
+				retValue.add(nameToSpeciesMap.get(s));
 			}
 		}
 		return retValue;
@@ -46,12 +47,12 @@ public class StringSpecies implements Comparable<StringSpecies> {
 	public static List<StringSpecies> readSpecies(List<Map<String, String>> speciesFromTask) throws Exception {
 		modelSpecies = new ArrayList<StringSpecies>();
 		allSpecies = new ArrayList<StringSpecies>();
-		nameSpecies = new TreeMap<String, StringSpecies>();
+		nameToSpeciesMap = new TreeMap<String, StringSpecies>();
 
 		for (Map<String, String> r : speciesFromTask) {
 			StringSpecies species = new StringSpecies(r);
 			allSpecies.add(species);
-			nameSpecies.put(species.toString(), species);
+			nameToSpeciesMap.put(species.toString(), species);
 
 			// TODO: Fix the way we set the model species
 			String homoSapiensAbbrevName = "Homo sapiens";
@@ -74,9 +75,9 @@ public class StringSpecies implements Comparable<StringSpecies> {
 	}
 
 	public static StringSpecies getSpecies(String speciesName) {
-		if (nameSpecies == null || speciesName == null) return null;
-		if (nameSpecies.containsKey(speciesName))
-			return nameSpecies.get(speciesName);
+		if (nameToSpeciesMap == null || speciesName == null) return null;
+		if (nameToSpeciesMap.containsKey(speciesName))
+			return nameToSpeciesMap.get(speciesName);
 
 		if (allSpecies == null) return null;
 		for (StringSpecies s: allSpecies) {
