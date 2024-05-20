@@ -4,8 +4,9 @@ public enum NetworkType {
 	FUNCTIONAL("full STRING network", "functional"),
 	PHYSICAL("physical subnetwork", "physical");
 	
-	String name;
-	String apiName;
+	private final String name;
+	private final String apiName;
+
 	NetworkType(String name, String api) {
 		this.name = name;
 		this.apiName = api;
