@@ -4,13 +4,17 @@
 	<properties>
 		<bundle.symbolicName>ProteoVisualizer</bundle.symbolicName>
 		<bundle.namespace>dk.ku.cpr.proteoVisualizer.internal</bundle.namespace>
+
 		<cytoscape.api.version>3.9.0</cytoscape.api.version>
+		<osgi.api.version>6.0.0</osgi.api.version>
+		<pax-logging.api.version>1.5.2</pax-logging.api.version>
+		<httpclient.version>4.5.13</httpclient.version>
+		<json-simple.version>1.1.1</json-simple.version>
+		<commons-codec.version>1.10</commons-codec.version>
 
 		<maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
 		<maven-bundle-plugin.version>5.1.1</maven-bundle-plugin.version>
-		<osgi.api.version>6.0.0</osgi.api.version>
-
 	</properties>
 
 	<groupId>dk.ku.cpr</groupId>
@@ -180,7 +184,7 @@
 		<dependency>
 			<groupId>org.ops4j.pax.logging</groupId>
 			<artifactId>pax-logging-api</artifactId>
-			<version>1.5.2</version>
+			<version>${pax-logging.api.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -192,22 +196,20 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-			<version>4.5.13</version>
+			<version>${httpclient.version}</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.json-simple</groupId>
 			<artifactId>json-simple</artifactId>
-			<version>1.1.1</version>
+			<version>${json-simple.version}</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>1.10</version>
+			<version>${commons-codec.version}</version>
 			<optional>true</optional>
 		</dependency>
-
 	</dependencies>
-
 </project>
