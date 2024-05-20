@@ -143,8 +143,8 @@ public class StringSpecies implements Comparable<StringSpecies> {
 					Thread.sleep(500);
 				} catch (Exception e) {}
 			}
-			if (manager.haveCommand("string", "list species"))
-				manager.executeCommand("string", "list species", null, this, true);
+
+			manager.executeCommand("string", "list species", null, this, true);
 		}
 
 		@Override
