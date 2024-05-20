@@ -184,16 +184,14 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 	}
 	
 	public boolean haveNamespace(String namespace) {
-		List<String> namespaces = availableCommands.getNamespaces();
-		if (namespaces.contains(namespace)) return true;
-		return false;
+		return availableCommands.getNamespaces().contains(namespace);
 	}
 	
 	public boolean haveCommand(String namespace, String command) {
-		if (!haveNamespace(namespace)) return false;
-		List<String> commands = availableCommands.getCommands(namespace);
-		if (commands.contains(command)) return true;
-		return false;
+		if (!haveNamespace(namespace)) {
+			return false;
+		}
+		return availableCommands.getCommands(namespace).contains(command);
 	}
 	
 	public ImageIcon getPVImageIcon() {
