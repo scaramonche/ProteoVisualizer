@@ -168,8 +168,7 @@ public class AppManager implements GroupAboutToCollapseListener, GroupCollapsedL
 
 	public void executeCommand(String namespace, String command, Map<String, Object> args, TaskObserver observer,
 			boolean synchronous) {
-		List<String> commands = availableCommands.getCommands(namespace);
-		if (!commands.contains(command)) {
+		if (!haveCommand(namespace, command)) {
 			//LogUtils.warn("Command " + namespace + " " + command + " isn't available");
 			return;
 		}
