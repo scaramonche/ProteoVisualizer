@@ -17,12 +17,12 @@ public enum NetworkType {
 	public String toString() { return name; }
 	
 	public static NetworkType getType(String type) {
-		if (type == null)
-			return null;
-		else if (type.equals(PHYSICAL.name))
-			return NetworkType.PHYSICAL;
-		else
-			return NetworkType.FUNCTIONAL;
+		for (NetworkType networkType : NetworkType.values()) {
+			if (networkType.name.equalsIgnoreCase(type)) {
+				return networkType;
+			}
+		}
+		return null;
 	}
 }
 
