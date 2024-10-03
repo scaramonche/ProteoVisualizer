@@ -262,15 +262,6 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		// get network on which the task was executed
 		retrievedNetwork = task.getResults(CyNetwork.class);
 
-		// create a map of query term to node
-		HashMap<String, CyNode> queryTerm2node = new HashMap<String, CyNode>();
-		for (CyNode node : retrievedNetwork.getNodeList()) {
-			String queryTerm = retrievedNetwork.getRow(node).get(SharedProperties.QUERYTERM, String.class);
-			if (queryTerm != null) {
-				queryTerm2node.put(queryTerm, node);
-			}
-		}
-
 		// add needed new columns
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultNetworkTable(), Boolean.class,
 				SharedProperties.COLLAPSED, false);
@@ -278,6 +269,8 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				SharedProperties.USE_ENRICHMENT, false);
 		manager.createStringColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), String.class,
 				SharedProperties.PROTEINGROUP, "");
+		manager.createStringColumnIfNeeded(retrievedNetwork.getDefaultNodeTable(), String.class,
+				SharedProperties.MATCHEDID, "");
 		manager.createBooleanColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Boolean.class,
 				SharedProperties.EDGEAGGREGATED, false);
 		//manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Double.class,
@@ -287,6 +280,16 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
 				SharedProperties.EDGEEXISTING, null);
 		
+		// create a map of query term to node
+		HashMap<String, CyNode> queryTerm2node = new HashMap<String, CyNode>();
+		for (CyNode node : retrievedNetwork.getNodeList()) {
+			String queryTerm = retrievedNetwork.getRow(node).get(SharedProperties.QUERYTERM, String.class);
+			if (queryTerm != null) {
+				queryTerm2node.put(queryTerm, node);
+				retrievedNetwork.getRow(node).set(SharedProperties.MATCHEDID, queryTerm);
+			}
+		}
+
 		// duplicate nodes (and their adjacent edges) if they belong to more than one protein group
 		HashMap<CyNode, LinkedHashSet<CyNode>> protein2dupProteinsMap = new HashMap<CyNode, LinkedHashSet<CyNode>>();
 		for (String protein : protected_protein2pgsMap.keySet()) {
@@ -363,7 +366,9 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					} 
 					// add to list with group nodes and count up
 					nodesForGroup.add(proteinNode);
+					// set protein group name in both protein group and query term
 					retrievedNetwork.getRow(proteinNode).set(SharedProperties.PROTEINGROUP, pg);
+					retrievedNetwork.getRow(proteinNode).set(SharedProperties.QUERYTERM, pg);
 					proteinCount += 1;
 				}
 			}
@@ -385,6 +390,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			// set protein group query term to be the PD name such that import of data works properly
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.QUERYTERM, pg);
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.PROTEINGROUP, pg);
+			// retrievedNetwork.getRow(groupNode).set(SharedProperties.MATCHEDID, proteins.toString()); -> it is the same as the protein group
 			retrievedNetwork.getRow(groupNode).set(SharedProperties.TYPE, SharedProperties.NODE_TYPE_PG);				
 			// set group node to be used for enrichment with the string ID of the repr node
 			// USE_ENRICHMENT might change eventually but ok like this for now
@@ -457,7 +463,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 				retrievedNetwork.getRow(groupNode).set(col.getName(), Double.valueOf(averagedValue/nodesForGroup.size()));
 			}
 		}
-
+		
 		// TODO: decide how to handle networks with confidence 1.0, that might contain only identity edges!
 		
 		// collapse all the groups if the user selected this option

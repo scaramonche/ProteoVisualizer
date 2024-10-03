@@ -64,6 +64,7 @@ public final class SharedProperties {
 	public static String ID = "@id";
 	public static String IMAGE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "imageurl";
 	public static String INTERACTORSCORE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "interactor score";
+	public static String MATCHEDID = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "matched ID";
 	public static String NAMESPACE = STRINGDB_NAMESPACE + NAMESPACE_SEPARATOR + "namespace";
 	public static String PROTEINGROUP = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "protein group";
 	public static String QUERYTERM = "query term";
