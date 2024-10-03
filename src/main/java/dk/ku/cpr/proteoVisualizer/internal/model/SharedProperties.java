@@ -12,7 +12,7 @@ import org.cytoscape.work.ServiceProperties;
  * Class used to store shared properties. The class also provides some useful
  * functions.
  */
-public class SharedProperties {
+public final class SharedProperties {
 
 	/** The prefix form hidden attributes. */
 	public static final String APP_PREFIX = "dk.ku.cpr.proteoVisualizer.";
@@ -102,5 +102,4 @@ public class SharedProperties {
 	// We forbid the class to have instances
 	private SharedProperties() {
 	}
-
 }
