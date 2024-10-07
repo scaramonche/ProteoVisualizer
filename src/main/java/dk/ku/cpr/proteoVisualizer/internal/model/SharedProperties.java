@@ -43,6 +43,7 @@ public final class SharedProperties {
 	public static String STYLE_STRING_EMPTY = "string:";
 	public static String ATTRIBUTE_CONCAT_SYMBOL = ";";
 	public static String EDGE_TYPE_IDENTITY = "identity";
+	public static String EDGE_TYPE_SHARED = "shared proteins";
 	
 	// TODO: add more delimiters that make sense?
 	public static String[] pg_delimiters = new String[] {DEFAULT_PG_DELIMITER, "|", ","};
@@ -96,6 +97,7 @@ public final class SharedProperties {
 	public static String EDGEPOSSIBLE = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "# possible edges";
 	public static String EDGEEXISTING = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "# actual edges";
 	public static String EDGEAGGREGATED = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "aggregated";
+	public static String EDGESHARED = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "# shared proteins";
 
 	// Network information 
 	public static String COLLAPSED = PROTEOVIS_NAMESPACE + NAMESPACE_SEPARATOR + "collapsed";

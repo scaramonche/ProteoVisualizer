@@ -45,7 +45,6 @@ import org.cytoscape.work.TaskMonitor.Level;
 import org.cytoscape.work.TaskObserver;
 import org.cytoscape.work.TunableSetter;
 import org.cytoscape.work.json.JSONResult;
-import org.cytoscape.work.util.ListSingleSelection;
 
 import dk.ku.cpr.proteoVisualizer.internal.model.AppManager;
 import dk.ku.cpr.proteoVisualizer.internal.model.NetworkType;
@@ -277,8 +276,10 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		//		SharedProperties.EDGEPROB, null);
 		manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
 				SharedProperties.EDGEPOSSIBLE, null);
-		manager.createDoubleColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
+		manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
 				SharedProperties.EDGEEXISTING, null);
+		manager.createIntegerColumnIfNeeded(retrievedNetwork.getDefaultEdgeTable(), Integer.class,
+				SharedProperties.EDGESHARED, 0);
 		
 		// create a map of query term to node
 		HashMap<String, CyNode> queryTerm2node = new HashMap<String, CyNode>();
@@ -346,9 +347,11 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		manager.setGroupSettings();
 		// go over all protein groups
 		List<CyGroup> groups = new ArrayList<CyGroup>();
+		Map<CyNode, CyGroup> dupProteinToGroup = new HashMap<CyNode, CyGroup>();
 		for (String pg : protected_pg2proteinsMap.keySet()) {
 			List<String> proteins = protected_pg2proteinsMap.get(pg);
 			List<CyNode> nodesForGroup = new ArrayList<>();
+			Set<CyNode> dupNodes = new HashSet<CyNode>();
 			CyNode reprNode = null;
 			int proteinCount = 0;
 			for (String protein : proteins) {
@@ -359,6 +362,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 						CyNode copyNode = proteinNode;
 						proteinNode = protein2dupProteinsMap.get(copyNode).iterator().next();
 						protein2dupProteinsMap.get(copyNode).remove(proteinNode);
+						dupNodes.add(proteinNode);
 					}
 					// if this is the first node in the list, set it as the representative node
 					if (proteinCount == 0) {
@@ -385,6 +389,9 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			CyGroup pgGroup = groupFactory.createGroup(this.retrievedNetwork, nodesForGroup, null, true);
 			groups.add(pgGroup);
 			CyNode groupNode = pgGroup.getGroupNode();
+			// keep track of duplicated node-group pairs
+			for (CyNode dupNode : dupNodes)  
+				dupProteinToGroup.put(dupNode, pgGroup);
 
 			// Node attributes that are group-specific
 			// set protein group query term to be the PD name such that import of data works properly
@@ -466,6 +473,33 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 		
 		// TODO: decide how to handle networks with confidence 1.0, that might contain only identity edges!
 		
+		// go through identity edges and for the groups that have shared proteins, how many they share
+		Map<String, Integer> groupsSharedProteins = new HashMap<String, Integer>();
+		for (CyEdge edge : retrievedNetwork.getEdgeList()) {
+			// check if it is an identity edge we created earlier
+			if (retrievedNetwork.getRow(edge).get(CyEdge.INTERACTION, String.class).equals(SharedProperties.EDGE_TYPE_IDENTITY)) {
+				CyNode group1Node = edge.getSource();
+				CyNode group2Node = edge.getTarget();					
+				
+				if (dupProteinToGroup.containsKey(edge.getSource()))
+					group1Node = dupProteinToGroup.get(edge.getSource()).getGroupNode();
+				
+				if (dupProteinToGroup.containsKey(edge.getTarget()))
+					group2Node = dupProteinToGroup.get(edge.getTarget()).getGroupNode();
+
+				// create a key for the group pair (always the smaller one first)
+				String groupPair = group1Node.getSUID() + "_" + group2Node.getSUID();
+				if (group1Node.getSUID() > group2Node.getSUID())
+					groupPair = group2Node.getSUID() + "_" + group1Node.getSUID();
+				
+				if (groupsSharedProteins.containsKey(groupPair))
+					groupsSharedProteins.put(groupPair, groupsSharedProteins.get(groupPair) + 1);
+				else
+					groupsSharedProteins.put(groupPair, 1);				
+			}
+		}
+		System.out.println(groupsSharedProteins);
+		
 		// collapse all the groups if the user selected this option
 		// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
 		if (this.protected_collapsed) {
@@ -473,6 +507,24 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 			for (CyGroup group : groups) {
 				// System.out.println("collapsing group " + retrievedNetwork.getRow(group.getGroupNode()).get(CyNetwork.NAME, String.class) + " (SUID: " + group.getGroupNode().getSUID() + ")");
 				group.collapse(retrievedNetwork);				
+			}
+		}
+
+		// go over groups and save shared proteins (or create a new edge if needed, which should not be the case actually)
+		for (CyNode group1Node : retrievedNetwork.getNodeList()) {
+			for (CyGroup group2 : dupProteinToGroup.values()) {
+				CyNode group2Node = group2.getGroupNode();
+				if (group2Node.getSUID() <= group1Node.getSUID())
+					continue;
+
+				String groupPair = group1Node.getSUID() + "_" + group2Node.getSUID();
+				if (!groupsSharedProteins.containsKey(groupPair))
+					continue;
+				
+				List<CyEdge> connEdges = retrievedNetwork.getConnectingEdgeList(group1Node, group2Node, Type.ANY);
+				for (CyEdge connEdge : connEdges) {
+					retrievedNetwork.getRow(connEdge).set(SharedProperties.EDGESHARED, groupsSharedProteins.get(groupPair));
+				}
 			}
 		}
 		
