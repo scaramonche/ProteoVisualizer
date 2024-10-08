@@ -498,7 +498,7 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					groupsSharedProteins.put(groupPair, 1);				
 			}
 		}
-		System.out.println(groupsSharedProteins);
+		// System.out.println(groupsSharedProteins);
 		
 		// collapse all the groups if the user selected this option
 		// TODO: aggregation is turned off in the cy activator, but do we need to check the preferences again?
