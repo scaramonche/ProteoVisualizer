@@ -9,8 +9,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stream;
-import java.util.stream.Collectors;
 
 import javax.swing.JOptionPane;
 
@@ -490,11 +488,14 @@ public class RetrieveStringNetworkTask extends AbstractTask implements TaskObser
 					group2Node = dupProteinToGroup.get(edge.getTarget()).getGroupNode();
 
 				// create a key for the group pair (always the smaller one first)
-				String groupPairKey = Stream.of(group1Node.getSUID(), group2Node.getSUID())
-					.sorted()
-					.collect(Collectors.joining("_"));
-
-				groupsSharedProteins.merge(groupPairKey, 1, Integer::sum)
+				String groupPair = group1Node.getSUID() + "_" + group2Node.getSUID();
+				if (group1Node.getSUID() > group2Node.getSUID())
+					groupPair = group2Node.getSUID() + "_" + group1Node.getSUID();
+				
+				if (groupsSharedProteins.containsKey(groupPair))
+					groupsSharedProteins.put(groupPair, groupsSharedProteins.get(groupPair) + 1);
+				else
+					groupsSharedProteins.put(groupPair, 1);
 			}
 		}
 		// System.out.println(groupsSharedProteins);
