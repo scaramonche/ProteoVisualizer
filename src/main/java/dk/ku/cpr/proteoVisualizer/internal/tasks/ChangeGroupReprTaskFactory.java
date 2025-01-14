@@ -43,7 +43,9 @@ public class ChangeGroupReprTaskFactory extends AbstractTaskFactory implements N
 		CyNode groupNode = nodeView.getModel();
 		CyNetwork net = networkView.getModel();
 		// check if proteovis network and if group node
-		if (net != null && net.getRow(net).get(SharedProperties.COLLAPSED, Boolean.class)
+		if (net != null 
+				&& net.getRow(net).get(SharedProperties.COLLAPSED, Boolean.class) != null
+				&& net.getRow(net).get(SharedProperties.COLLAPSED, Boolean.class) 
 				&& groupManager.getGroup(groupNode, networkView.getModel()) != null)
 			return true;
 		return false;
