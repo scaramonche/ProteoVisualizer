@@ -13,3 +13,8 @@ Proteo Visualizer networks are designed to be compatible with other Cytoscape ap
 ## Implementation
 
 Proteo Visualizer relies on the Cytoscape stringApp for retrieving networks from the STRING database as well as the built-in Cytoscape CyGroups functionality for the creation and maintenance of the group nodes. In accordance with other Cytoscape apps, the main functionality is also available via commands and can be automatically executed from R or Python via the Cytoscape automation interface.
+
+## Citation
+
+Locard-Paulet M\*, Doncheva NT\*, Morris JH and Jensen LJ (2024). Functional analysis of MS-based proteomics data: from protein groups to networks. *Molecular and Cellular Proteomics*, **23**:100871.  
+[Abstract](https://pubmed.ncbi.nlm.nih.gov/39486590/) [Full text](https://doi.org/10.1016/j.mcpro.2024.100871)  
